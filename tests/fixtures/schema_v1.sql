@@ -1,6 +1,6 @@
 PRAGMA foreign_keys = ON;
 CREATE TABLE IF NOT EXISTS schema_version (version INTEGER PRIMARY KEY);
-INSERT INTO schema_version SELECT 1 WHERE NOT EXISTS (SELECT 1 FROM schema_version);
+INSERT OR IGNORE INTO schema_version VALUES (1);
 CREATE TABLE IF NOT EXISTS actors (
  id TEXT PRIMARY KEY, name TEXT NOT NULL UNIQUE,
  kind TEXT NOT NULL CHECK(kind IN ('human','agent')),
@@ -82,53 +82,3 @@ BEGIN SELECT RAISE(ABORT, 'Only human accounts can react'); END;
 CREATE TRIGGER IF NOT EXISTS human_reaction_update_only BEFORE UPDATE ON reactions
 WHEN (SELECT kind FROM actors WHERE id = NEW.actor_id) != 'human'
 BEGIN SELECT RAISE(ABORT, 'Only human accounts can react'); END;
-
--- Version 2 adds companion records; original ideas and revisions are untouched.
-CREATE TABLE IF NOT EXISTS agenda_topics (
- id TEXT PRIMARY KEY, label TEXT NOT NULL, starter_question TEXT NOT NULL, position INTEGER NOT NULL
-);
-CREATE TABLE IF NOT EXISTS agenda_signals (
- id TEXT PRIMARY KEY, topic_id TEXT NOT NULL REFERENCES agenda_topics(id), title TEXT NOT NULL,
- body TEXT NOT NULL, actor_id TEXT NOT NULL REFERENCES actors(id),
- origin_kind TEXT NOT NULL CHECK(origin_kind IN ('human','ai','collaborative','unspecified')),
- assistance TEXT NOT NULL DEFAULT '', created REAL NOT NULL
-);
-CREATE TABLE IF NOT EXISTS signal_support (
- signal_id TEXT NOT NULL REFERENCES agenda_signals(id), actor_id TEXT NOT NULL REFERENCES actors(id),
- created REAL NOT NULL, PRIMARY KEY(signal_id,actor_id)
-);
-CREATE TABLE IF NOT EXISTS signal_links (
- signal_id TEXT PRIMARY KEY REFERENCES agenda_signals(id), idea_id TEXT NOT NULL UNIQUE REFERENCES ideas(id),
- reviewer_id TEXT NOT NULL REFERENCES actors(id), reason TEXT NOT NULL, created REAL NOT NULL
-);
-CREATE TABLE IF NOT EXISTS idea_origins (
- idea_id TEXT PRIMARY KEY REFERENCES ideas(id),
- origin_kind TEXT NOT NULL CHECK(origin_kind IN ('human','ai','collaborative','unspecified')),
- declared_by TEXT NOT NULL REFERENCES actors(id), created REAL NOT NULL
-);
-CREATE TABLE IF NOT EXISTS task_briefs (
- task_id TEXT PRIMARY KEY REFERENCES tasks(id),
- role TEXT NOT NULL CHECK(role IN ('summarizer','challenger','researcher','bridge-builder','catalyst-drafter','claim-extractor')),
- tier INTEGER NOT NULL CHECK(tier BETWEEN 1 AND 3), success_criteria TEXT NOT NULL,
- requested_head_id TEXT NOT NULL REFERENCES revisions(id), signal_id TEXT REFERENCES agenda_signals(id)
-);
-CREATE TABLE IF NOT EXISTS task_inputs (
- task_id TEXT PRIMARY KEY REFERENCES tasks(id), body TEXT NOT NULL, created REAL NOT NULL
-);
-CREATE TABLE IF NOT EXISTS task_reviews (
- task_id TEXT PRIMARY KEY REFERENCES tasks(id), reviewer_id TEXT NOT NULL REFERENCES actors(id),
- verdict TEXT NOT NULL CHECK(verdict IN ('useful','revise','not-useful')),
- reason TEXT NOT NULL, created REAL NOT NULL
-);
-CREATE TRIGGER IF NOT EXISTS human_signal_only BEFORE INSERT ON agenda_signals
-WHEN (SELECT kind FROM actors WHERE id=NEW.actor_id) != 'human'
-BEGIN SELECT RAISE(ABORT, 'Only humans set the agenda'); END;
-CREATE TRIGGER IF NOT EXISTS human_support_only BEFORE INSERT ON signal_support
-WHEN (SELECT kind FROM actors WHERE id=NEW.actor_id) != 'human'
-BEGIN SELECT RAISE(ABORT, 'Only humans support agenda questions'); END;
-CREATE TRIGGER IF NOT EXISTS signal_immutable BEFORE UPDATE ON agenda_signals
-BEGIN SELECT RAISE(ABORT, 'Preserve the original agenda question'); END;
-CREATE TRIGGER IF NOT EXISTS idea_origin_label_immutable BEFORE UPDATE ON idea_origins
-BEGIN SELECT RAISE(ABORT, 'Preserve the declared origin'); END;
-CREATE TRIGGER IF NOT EXISTS task_review_immutable BEFORE UPDATE ON task_reviews
-BEGIN SELECT RAISE(ABORT, 'Preserve task reviews'); END;

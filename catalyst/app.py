@@ -16,10 +16,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from . import domain
+from . import domain, workshop
 from .db import canonical, connect, digest, initialize, uid
 from .models import (BudgetInput, ContributionInput, DraftInput, FeedbackInput, IdeaInput,
-                     ReactionInput, ReasonInput, ResultInput, ReviewInput, TaskInput)
+                     ReactionInput, ReasonInput, ResultInput, ReviewInput, TaskInput, ClaimInput)
 
 ROOT = Path(__file__).parent
 
@@ -48,7 +48,7 @@ def create_app(settings: Settings | None = None):
         initialize(settings.database)
         yield
 
-    app = FastAPI(title="Catalyst", version="0.1.0", lifespan=lifespan,
+    app = FastAPI(title="Catalyst", version="0.2.0", lifespan=lifespan,
                   description="Human-directed living ideas. Consumer subscription integrations are not connected.")
     app.state.settings = settings
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=list(settings.allowed_hosts))
@@ -56,6 +56,7 @@ def create_app(settings: Settings | None = None):
     templates = Jinja2Templates(directory=ROOT / "templates")
     templates.env.filters["pretty"] = lambda value: json.dumps(value, indent=2, ensure_ascii=False)
     templates.env.filters["when"] = lambda timestamp: time.strftime("%b %d, %Y · %H:%M UTC", time.gmtime(timestamp)) if timestamp else "Not published"
+    templates.env.globals.update(roles=workshop.ROLES, origins=workshop.ORIGINS)
     rates = OrderedDict()
 
     @app.middleware("http")
@@ -147,34 +148,47 @@ def create_app(settings: Settings | None = None):
     def health():
         with connect(settings.database) as con:
             con.execute("SELECT 1").fetchone()
-        return {"status": "ok", "version": "0.1.0", "provider_connected": False}
+        return {"status": "ok", "version": "0.2.0", "provider_connected": False}
 
     @app.get("/", response_class=HTMLResponse)
-    def home(request: Request, q: str = "", kind: str = ""):
+    def home(request: Request, q: str = "", kind: str = "", origin: str = "", sort: str = "newest"):
         q = q[:160]
+        if kind not in ("", "reflection", "catalyst", "claim") or origin not in ("", *workshop.ORIGINS):
+            raise HTTPException(422, "Unknown idea type or origin")
+        if sort not in ("newest", "oldest"):
+            raise HTTPException(422, "Unknown sort order")
+        order = "DESC" if sort == "newest" else "ASC"
         with connect(settings.database) as con:
-            rows = con.execute("SELECT * FROM ideas WHERE title LIKE ? AND (?='' OR kind=?) ORDER BY created DESC LIMIT 50",
-                               (f"%{q}%", kind, kind)).fetchall()
+            rows = con.execute("SELECT i.*,COALESCE(o.origin_kind,'unspecified') AS origin_kind FROM ideas i "
+                "LEFT JOIN idea_origins o ON o.idea_id=i.id WHERE i.title LIKE ? AND (?='' OR i.kind=?) "
+                "AND (?='' OR COALESCE(o.origin_kind,'unspecified')=?) ORDER BY i.created " + order + ",i.id LIMIT 50",
+                (f"%{q}%", kind, kind, origin, origin)).fetchall()
             items = []
             for row in rows:
                 item = dict(row)
                 item["synthesis"] = json.loads(con.execute("SELECT body FROM revisions WHERE id=?", (item["head_id"],)).fetchone()[0])
                 item["metrics"] = domain.metrics(domain.context(con, item["id"]))
                 items.append(item)
-        return page(request, "index.html", ideas=items, q=q, kind=kind)
+        return page(request, "index.html", ideas=items, q=q, kind=kind, origin=origin, sort=sort)
 
     @app.get("/ideas/{idea_id}", response_class=HTMLResponse)
-    def idea_page(request: Request, idea_id: str):
+    def idea_page(request: Request, idea_id: str, view: str = "synthesis"):
+        if view not in ("synthesis", "dissent", "discussion", "development", "investigations"):
+            raise HTTPException(422, "Unknown idea section")
         with connect(settings.database) as con:
             item = domain.idea(con, idea_id)
             current = dict(con.execute("SELECT * FROM revisions WHERE id=?", (item["head_id"],)).fetchone())
             ctx = domain.context(con, idea_id)
             history = [dict(r) for r in con.execute("SELECT r.*,a.name AS author FROM revisions r JOIN actors a ON a.id=r.author_id "
                                                    "WHERE r.idea_id=? ORDER BY r.created DESC", (idea_id,))]
-            tasks = [dict(r) for r in con.execute("SELECT id,question,status,attempts,creator_id FROM tasks WHERE idea_id=? ORDER BY created", (idea_id,))]
+            tasks = workshop.tasks_for_idea(con, idea_id)
+            label = con.execute("SELECT origin_kind FROM idea_origins WHERE idea_id=?", (idea_id,)).fetchone()
+            item["origin_kind"] = label[0] if label else "unspecified"
+            agenda_link = con.execute("SELECT signal_id FROM signal_links WHERE idea_id=?", (idea_id,)).fetchone()
             return page(request, "idea.html", idea=item, current=current, synthesis=json.loads(current["body"]),
                         ctx=ctx, metrics=domain.metrics(ctx), history=history, tasks=tasks,
-                        draft_template=domain.draft_template(con, idea_id), cadence=settings.cadence_seconds)
+                        draft_template=domain.draft_template(con, idea_id), cadence=settings.cadence_seconds, view=view,
+                        agenda_signal=agenda_link[0] if agenda_link else None)
 
     @app.get("/revisions/{revision_id}", response_class=HTMLResponse)
     def revision_page(request: Request, revision_id: str):
@@ -308,19 +322,12 @@ def create_app(settings: Settings | None = None):
     @app.post("/api/ideas/{idea_id}/tasks", status_code=201)
     def task(idea_id: str, data: TaskInput, actor=Depends(human)):
         with connect(settings.database, True) as con:
-            domain.idea(con, idea_id)
-            count = con.execute("SELECT count(*) FROM tasks WHERE idea_id=? AND status IN ('queued','leased')", (idea_id,)).fetchone()[0]
-            if count >= 10:
-                raise HTTPException(409, "Alpha limit: ten outstanding investigations per idea")
-            task_id = uid()
-            con.execute("INSERT INTO tasks(id,idea_id,question,creator_id,created) VALUES (?,?,?,?,?)",
-                        (task_id, idea_id, data.question, actor["id"], time.time()))
-            return {"id": task_id}
+            return {"id": workshop.queue_task(con, idea_id, data, actor)}
 
     @app.post("/api/tasks/claim")
-    def claim(actor=Depends(agent)):
+    def claim(data: ClaimInput | None = None, actor=Depends(agent)):
         with connect(settings.database, True) as con:
-            return domain.claim_task(con, actor)
+            return domain.claim_task(con, actor, data.roles if data else None)
 
     @app.post("/api/tasks/{task_id}/complete")
     def complete(task_id: str, data: ResultInput, actor=Depends(agent)):
@@ -353,4 +360,6 @@ def create_app(settings: Settings | None = None):
             return [dict(r) for r in con.execute("SELECT f.*,a.kind AS actor_kind,a.name FROM feedback f "
                                                 "JOIN actors a ON a.id=f.actor_id ORDER BY created DESC LIMIT 100")]
 
+    from .workshop_routes import install
+    install(app, settings, page, human, reviewer, agent)
     return app

@@ -1,4 +1,4 @@
-# Architecture 0.1
+# Architecture 0.2
 
 Status: implemented local alpha. The design favors a single understandable process
 over an ecosystem of services. FastAPI + Jinja templates + small browser JavaScript
@@ -119,3 +119,22 @@ revision: who/what produced it, which inputs it used, what changed, and why.
 Provenance makes the development inspectable; it does not establish correctness.
 The founding dialogue is historical evidence of design intent, not executable
 instructions or verified external facts.
+
+
+## 0.2 additions
+
+See [the work contract](AGENT_WORK.md) for human agenda, role briefs, tier routing,
+per-idea concurrency, review-slot reservations, and bounded history reuse. These
+checks use the existing BEGIN IMMEDIATE claim transaction. Results remain
+Discussion contributions; human result review is separate from publishing HEAD.
+
+Schema v2 uses companion tables rather than changing immutable idea/revision
+content. Startup is additive and idempotent. The explicit upgrade script first
+backs up existing v1 data. Unknown versions fail before schema changes. Twenty
+topic prompts are seeded, but never human questions, support, or work leases.
+
+Origin declarations are stored separately, surfaced as declarations rather than
+verified authorship, and left unspecified for older records. Agent job history
+is included as data on the next assignment, not as extra system instructions.
+It does not change the underlying model or confer permissions. Discovery supports
+type/origin filters and newest/oldest sorting, still without an opaque score.

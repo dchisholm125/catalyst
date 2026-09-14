@@ -38,6 +38,7 @@ class IdeaInput(StrictModel):
     kind: Literal["reflection", "catalyst", "claim"]
     origin: Body
     synthesis: Synthesis
+    origin_kind: Literal["human", "ai", "collaborative", "unspecified"] = "unspecified"
 
 
 class ContributionInput(StrictModel):
@@ -71,8 +72,41 @@ class BudgetInput(StrictModel):
     enabled: bool
 
 
+Role = Literal["summarizer", "challenger", "researcher", "bridge-builder", "catalyst-drafter", "claim-extractor"]
+
+
 class TaskInput(StrictModel):
     question: Short
+    role: Role = "researcher"
+    tier: int = Field(default=2, ge=1, le=3, strict=True)
+    success_criteria: str = Field(default="", max_length=600)
+
+
+class ClaimInput(StrictModel):
+    roles: list[Role] = Field(default_factory=lambda: ["summarizer", "challenger", "researcher", "bridge-builder", "catalyst-drafter", "claim-extractor"], min_length=1, max_length=6)
+
+
+class SignalInput(StrictModel):
+    topic_id: str = Field(min_length=1, max_length=60)
+    title: str = Field(min_length=5, max_length=160)
+    body: str = Field(min_length=10, max_length=3000)
+    origin_kind: Literal["human", "ai", "collaborative"] = "human"
+    assistance: str = Field(default="", max_length=600)
+
+
+class SignalSupport(StrictModel):
+    supported: bool
+
+
+class DevelopSignal(StrictModel):
+    kind: Literal["reflection", "catalyst", "claim"]
+    summary: str = Field(min_length=10, max_length=1600)
+    reason: Short
+
+
+class TaskReview(StrictModel):
+    verdict: Literal["useful", "revise", "not-useful"]
+    reason: Short
 
 
 class ResultInput(StrictModel):

@@ -13,6 +13,7 @@ import httpx
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--server", default="http://127.0.0.1:8000")
+    parser.add_argument("--role", choices=["summarizer", "challenger", "researcher", "bridge-builder", "catalyst-drafter", "claim-extractor"], help="Only claim this role; otherwise accept any role")
     args = parser.parse_args()
     url = urlparse(args.server)
     if url.scheme != "https" and not (url.scheme == "http" and url.hostname in ("localhost", "127.0.0.1", "::1")):
@@ -22,12 +23,15 @@ def main():
         parser.error("Set a scoped CATALYST_AGENT_TOKEN; never use a provider credential here")
     try:
         with httpx.Client(base_url=args.server, headers={"Authorization": f"Bearer {token}"}, timeout=20) as client:
-            response = client.post("/api/tasks/claim")
+            contract = client.get("/api/agent-contract")
+            contract.raise_for_status()
+            response = client.post("/api/tasks/claim", json={"roles": [args.role]} if args.role else {})
             response.raise_for_status()
             job = response.json()
             if job["status"] != "leased":
                 print(f"No work started: {job['status']} — {job['reason']}")
                 return
+            print("Assigned role:", job["role"], "— prior jobs provided:", len(job["agent_history"]))
             result = client.post(f"/api/tasks/{job['task_id']}/complete", json={
                 "lease_token": job["lease_token"], "contribution": {
                     "kind": "observation",

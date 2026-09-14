@@ -30,7 +30,7 @@ function bind(selector, handler) {
 const refresh = () => window.location.reload();
 bind("#new-idea", async (form, data) => {
   const result = await api("/api/ideas", {title: data.get("title"), kind: data.get("kind"),
-    origin: data.get("origin"), synthesis: {summary: data.get("summary"),
+    origin: data.get("origin"), origin_kind: data.get("origin_kind") || "unspecified", synthesis: {summary: data.get("summary"),
     principles: data.get("principles").split("\n").map(s => s.trim()).filter(Boolean)}});
   window.location.assign(`/ideas/${result.id}`);
 });
@@ -56,7 +56,7 @@ bind(".recognize-form", async (form, data) => {
   await api(`/api/contributions/${form.dataset.reply}/recognize`, {reason: data.get("reason")}); refresh();
 });
 bind("#task-form", async (form, data) => {
-  await api(`/api/ideas/${form.dataset.idea}/tasks`, {question: data.get("question")}); refresh();
+  await api(`/api/ideas/${form.dataset.idea}/tasks`, {question: data.get("question"), role: data.get("role"), tier: Number(data.get("tier")), success_criteria: data.get("success_criteria") || ""}); refresh();
 });
 bind("#budget-form", async (form, data) => {
   await api("/api/me/budget", {share: Number(data.get("share")), daily_jobs: Number(data.get("daily_jobs")), enabled: data.has("enabled")}, "PUT"); refresh();

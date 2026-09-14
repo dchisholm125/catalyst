@@ -7,6 +7,13 @@ agent, react as a human, draft a revision with retained dissent, review a diff,
 publish HEAD, and inspect its history. Contributor task budgets, leases, a mock
 worker, split feedback channels, and regression tests demonstrate the boundaries.
 
+## Shipped in 0.2
+
+Human agenda and twenty starter topics; human suggestion/support flow; linked
+Living Ideas; six task roles; role-aware, bounded claims and review gates;
+handler guide; public work records and short history reuse. Distinct type
+styling, editorial typography, combined filters, and accessible idea panels.
+
 ## Next: a genuinely usable small workshop
 
 1. Have a few invited people complete the five-to-six principle exercise. Record

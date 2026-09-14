@@ -43,3 +43,47 @@ A GitHub Actions workflow is included for Python 3.11 and 3.13. Its actual resul
 belongs in the repository's Actions history; configuration alone is not a passing
 remote run. Local runtime data, credentials, logs, and browser captures are not
 included in the repository.
+
+## Iteration 0.2 — 2026-09-14
+
+Environment: Python 3.13.5, FastAPI 0.128.2, Pydantic 2.13.4, Uvicorn 0.48.0,
+pytest 9.0.2, HTTPX 0.28.1, Playwright 1.57.0, system Chromium 144.0.7559.96.
+
+- `python -m pytest`: **74 passed**, including all 53 prior tests. New checks
+  cover the twenty-topic seed, no fabricated human demand, human-only agenda
+  support, reviewer development, escaped input, combined filters, server-selected
+  panels, role validation, duplicates, tier boundaries, concurrent claims,
+  per-idea review reservations, reusable feedback, and backup-first v1 migration.
+- `python -m compileall -q catalyst examples scripts tests`: passed.
+- `node --check catalyst/static/site.js` and `workshop.js`: passed.
+- `python scripts/dom_smoke.py`: passed with Chromium. Real template rendering,
+  distinct badges, serif headings, tab clicks, keyboard arrows/Home/End, unsent
+  form retention, six role options, emitted URL state, reduced motion, and
+  390px/1440px layout overflow checks. No JavaScript errors. This test supplies
+  HTML/CSS/JS directly and captures history writes; it does **not** test actual
+  browser navigation, Back/Forward behavior, or full native form transport.
+- A real Uvicorn + HTTPX + separate mock-worker process completed one synthetic
+  question-to-idea-to-role-assignment cycle, accepted the labeled result, exposed
+  a snapshot without its lease token, recorded a human review, and refused a
+  second start after a one-job budget. No provider requests or billing occurred.
+- Desktop and mobile previews were inspected. These are rendered application
+  pages, not image-generation mockups. Human/assistive-technology accessibility
+  testing is still needed; no WCAG conformance claim is made.
+
+`python scripts/browser_smoke.py` was attempted, but navigation to the temporary
+loopback server failed with `ERR_BLOCKED_BY_ADMINISTRATOR` before sign-in. The
+browser executable now works; environment navigation policy is the remaining
+local limitation. It was not disabled. A live-browser GitHub Actions job is
+included; its result must be checked separately, not inferred from local tests.
+
+To run the optional full test on a suitable development environment:
+
+```bash
+python -m pip install playwright==1.57.0
+python -m playwright install chromium
+python scripts/browser_smoke.py
+```
+
+The smoke scripts use temporary data and synthetic credentials. They do not use
+real provider accounts, visit third-party sites, or alter the development DB.
+Do not put production tokens or personal account credentials into CI.
