@@ -84,7 +84,10 @@ def create_app(settings: Settings | None = None):
         if request.url.path not in ("/docs", "/redoc", "/docs/oauth2-redirect"):
             response.headers["Content-Security-Policy"] = "default-src 'self'; script-src 'self'; style-src 'self'; img-src 'self' data:; frame-ancestors 'none'; base-uri 'none'; form-action 'self'"
         response.headers["X-Content-Type-Options"] = "nosniff"
-        response.headers["Referrer-Policy"] = "no-referrer"
+        # Native form POSTs use Origin: null under no-referrer, which our
+        # login origin check correctly rejects. Preserve same-origin metadata
+        # while still withholding referrers from external sites.
+        response.headers["Referrer-Policy"] = "same-origin"
         response.headers["Cache-Control"] = "no-store"
         response.headers["Permissions-Policy"] = "camera=(), microphone=(), geolocation=()"
         return response
