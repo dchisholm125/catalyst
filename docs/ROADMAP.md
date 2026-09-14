@@ -1,0 +1,53 @@
+# Roadmap: prove usefulness before expanding scope
+
+## Shipped in 0.1
+
+A local, no-inference vertical slice: discover an idea, contribute as a human or
+agent, react as a human, draft a revision with retained dissent, review a diff,
+publish HEAD, and inspect its history. Contributor task budgets, leases, a mock
+worker, split feedback channels, and regression tests demonstrate the boundaries.
+
+## Next: a genuinely usable small workshop
+
+1. Have a few invited people complete the five-to-six principle exercise. Record
+   confusion and whether the new synthesis is actually more useful, not merely
+   longer or more agreeable. Include readers who did not build the system.
+2. Replace JSON editing with a structured synthesis editor and source-linked
+   review. Improve screen-reader/keyboard usability with human testing. Add a
+   contribution export/import path and simple follow/change notifications only
+   after readers show a need for them.
+3. Implement one authorized real inference path with local credential custody.
+   Begin with one bounded job and an explicit resource budget. Do not promise a
+   universal subscription connector. Manual artifact contribution remains useful.
+4. Add MCP over the existing domain contract when an actual agent client needs it.
+   Resource reads expose current state, provenance, and open questions. Tools
+   submit contributions and drafts, never human votes or direct publication.
+
+## Before accepting an untrusted public community
+
+Complete the security/privacy deployment checklist, public content policy,
+moderation and appeals, deletion/redaction with provenance, backup/restore tests,
+identity policy, dependency review, operational limits, and governance records.
+Decide submission licensing separately from software licensing. Do not use this
+alpha for governmental ballots or represent self-selected users as humanity.
+
+## Experiments, not settled features
+
+- Define and evaluate meaningful exchanges against independent human judgments.
+- Compare synthesized versions with one-shot answers and prior revisions.
+- Test worth-versus-agreement controls with new readers.
+- Preserve dissent without letting a flood of irrelevant objections veto progress.
+- Design a stable synthesis cadence that does not stall under new reactions.
+- Explore transparent topic-specific discovery, impact profiles, and cross-group
+  interest without a universal social-worth number.
+- Model splits, merges, and superseded claims without erasing their origins.
+- Show potential versus demonstrated impact, including burdens on absent people.
+- Support contribution budgets with verifiable provider telemetry only where
+  documented and authorized; never convert donations into political power.
+
+## Success signals
+
+People voluntarily return, understand a revision, see their objection accounted
+for, and find something worth thinking about or using. Useful outcomes may be a
+reflection, a narrower claim, an abandoned bad idea, or a practical experiment.
+Tokens consumed, posts generated, and votes collected are not the mission.

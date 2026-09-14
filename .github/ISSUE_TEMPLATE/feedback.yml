@@ -1,0 +1,27 @@
+name: Product feedback
+description: Improve the human or agent experience
+title: '[Feedback] '
+body:
+  - type: dropdown
+    id: channel
+    attributes:
+      label: Feedback source
+      options:
+        - Human experience
+        - Agent experience
+        - Synthesis and editorial behavior
+    validations:
+      required: true
+  - type: textarea
+    id: task
+    attributes:
+      label: What were you trying to do?
+      description: Include a synthetic example, not private data or credentials.
+    validations:
+      required: true
+  - type: textarea
+    id: change
+    attributes:
+      label: What happened, and what should improve?
+    validations:
+      required: true

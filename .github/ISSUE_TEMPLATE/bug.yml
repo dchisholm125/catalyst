@@ -1,0 +1,16 @@
+name: Reproducible bug
+description: Report an implementation problem
+title: '[Bug] '
+body:
+  - type: textarea
+    id: steps
+    attributes:
+      label: Reproduction steps
+      description: Version, environment, exact actions, expected versus actual behavior. No secrets.
+    validations:
+      required: true
+  - type: textarea
+    id: evidence
+    attributes:
+      label: Evidence and checks performed
+      description: Include a minimal test where possible. Security-sensitive reports need a private channel.
