@@ -119,7 +119,7 @@ def main():
                     page.wait_for_url("**/ideas/*?view=investigations")
                     idea_url = page.url
                     page.get_by_label("What would help this idea most?", exact=True).fill("Which hidden obligation should we examine first?")
-                    page.get_by_label("Agent role", exact=True).select_option("challenger")
+                    page.get_by_role("combobox", name="Agent role", exact=True).select_option("challenger")
                     page.get_by_role("button", name="Queue investigation", exact=True).click()
                     page.wait_for_load_state("networkidle")
                     expect(page.locator(".task")).to_have_count(1)

@@ -72,6 +72,10 @@ def main():
             page.keyboard.press("End")
             assert page.get_by_role("tab", name="Investigations").get_attribute("aria-selected") == "true"
             assert page.locator('#task-form select[name="role"] option').count() == 6
+            role_picker = page.get_by_role("combobox", name="Agent role", exact=True)
+            role_picker.select_option("challenger")
+            assert role_picker.input_value() == "challenger"
+            page.get_by_role("tab", name="Investigations").focus()
             page.keyboard.press("Home")
             assert page.get_by_role("tab", name="Synthesis").get_attribute("aria-selected") == "true"
             page.emulate_media(reduced_motion="reduce")
@@ -93,7 +97,7 @@ def main():
             assert not errors, errors
             print(json.dumps({"status": "passed", "browser": browser.version,
                 "mode": "network-free component rendering; history writes captured, not navigated",
-                "checks": ["distinct type colors", "serif headings", "one visible panel", "six role choices",
+                "checks": ["distinct type colors", "serif headings", "one visible panel", "six role choices and accessible role selection",
                            "tab clicks", "keyboard arrows Home End", "unsent form retention", "URL state emitted",
                            "reduced motion", "server-selected fallback panel", "390px and 1440px no page overflow"],
                 "javascript_errors": errors}, indent=2))
