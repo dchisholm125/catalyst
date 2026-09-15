@@ -1,12 +1,23 @@
 """The agenda and agent-facing contract reuse the app's authentication boundaries."""
-from fastapi import Depends, Request, HTTPException
+from fastapi import Depends, Request, HTTPException, Query
 from fastapi.responses import HTMLResponse
 from .db import connect
-from . import workshop as w
-from .models import SignalInput, SignalSupport, DevelopSignal, TaskReview
+from . import workshop as w, questions
+from .models import SignalInput, SignalSupport, DevelopSignal, TaskReview, QuestionReview, QuestionClarification
 
 
 def install(app, settings, page, human, reviewer, agent):
+    @app.get('/my-questions', response_class=HTMLResponse)
+    def my_questions(request: Request, offset: int = Query(default=0, ge=0), actor=Depends(human)):
+        with connect(settings.database) as con:
+            rows = w.list_signals(con, owner=actor['id'], offset=offset, limit=21)
+            total = con.execute('SELECT count(*) FROM agenda_signals WHERE actor_id=?', (actor['id'],)).fetchone()[0]
+            return page(request, 'my_questions.html', signals=rows[:20], offset=offset, more=len(rows)>20, total=total)
+
+    @app.get('/review-process', response_class=HTMLResponse)
+    def review_process(request: Request):
+        return page(request, 'review_process.html')
+
     @app.get("/agenda", response_class=HTMLResponse)
     def agenda(request: Request, topic: str = ""):
         with connect(settings.database) as con:
@@ -20,7 +31,7 @@ def install(app, settings, page, human, reviewer, agent):
         with connect(settings.database) as con:
             signal = w.get_signal(con, signal_id)
             supporters = [r[0] for r in con.execute("SELECT actor_id FROM signal_support WHERE signal_id=?", (signal_id,))]
-            return page(request, "signal.html", signal=signal, supporters=supporters)
+            return page(request, "signal.html", signal=signal, supporters=supporters, review_history=questions.history(con, signal_id))
 
     @app.get("/api/agenda")
     def agenda_data(topic: str = ""):
@@ -31,7 +42,20 @@ def install(app, settings, page, human, reviewer, agent):
     @app.post("/api/agenda", status_code=201)
     def add_signal(data: SignalInput, actor=Depends(human)):
         with connect(settings.database, True) as con:
-            return {"id": w.submit_signal(con, data, actor)}
+            signal_id = w.submit_signal(con, data, actor)
+            return {"id": signal_id, 'url': f'/agenda/{signal_id}', 'status': w.get_signal(con, signal_id)['review_status']}
+
+    @app.post('/api/agenda/{signal_id}/review')
+    def review_question(signal_id: str, data: QuestionReview, actor=Depends(reviewer)):
+        with connect(settings.database, True) as con:
+            questions.review(con, signal_id, data, actor)
+            return {'saved': True}
+
+    @app.post('/api/agenda/{signal_id}/clarify', status_code=201)
+    def clarify_question(signal_id: str, data: QuestionClarification, actor=Depends(human)):
+        with connect(settings.database, True) as con:
+            questions.clarify(con, signal_id, data, actor)
+            return {'saved': True}
 
     @app.put("/api/agenda/{signal_id}/support")
     def support(signal_id: str, data: SignalSupport, actor=Depends(human)):
@@ -55,7 +79,10 @@ def install(app, settings, page, human, reviewer, agent):
 
     @app.get("/api/agent-contract")
     def agent_contract():
-        return {"version": "0.3", "provider_connected": False,
+        return {"version": "0.4", "provider_connected": False,
+            'activity': {'heartbeat': '/api/agents/me/heartbeat', 'progress': '/api/tasks/{task_id}/progress',
+                         'heartbeat_seconds': 30, 'stale_after_seconds': 90, 'excerpt_limit': 1200,
+                         'notice': 'Report response excerpts only, never hidden reasoning or credentials. Progress cannot renew leases or publish work.'},
             "handler_controls": "Per-agent pause, permitted roles, and ordered personal queue apply before automatic routing. Queue-only mode waits when empty. Registration does not start a worker.",
             "roles": [{"id": k, "name": v[0], "purpose": v[1], "expected_output": v[2]} for k, v in w.ROLES.items()],
             "tiers": {"1": "Serve a linked human-agenda question", "2": "Deepen an existing Living Idea", "3": "Reviewer-authorized exploration"},

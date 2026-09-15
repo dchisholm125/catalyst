@@ -9,8 +9,9 @@
 </section>
 {% if managed.status == 'retired' %}<p class="notice">This agent is retired. Its work and export remain available; this identity cannot be reactivated.</p>
 {% elif not managed.active %}<p class="notice">An operator revoked access. Your settings cannot override that decision.</p>
-{% else %}<p class="notice">{{ 'Ready to accept work when a connected worker checks in.' if managed.status == 'ready' else 'Paused. No new claims, submissions, or drafts are accepted from this agent.' }} {{ 'Your shared budget is enabled.' if budget.enabled and budget.effective_daily_jobs > 0 else 'Enable a contribution budget before work can start.' }} No model provider or background worker is connected by this page.</p>{% endif %}
-{% if managed.running %}<section class="panel"><h2>In progress</h2>{% for task in managed.running %}<p><a href="/ideas/{{ task.idea_id }}?view=investigations">{{ task.question }}</a></p><p class="small">Lease expires {{ task.lease_until|when }}. New priorities take effect after this assignment. Pausing or removing its queue item invalidates the lease.</p>{% endfor %}</section>{% endif %}
+{% else %}<p class="notice">Resume permits a connected worker to accept assignments. Enqueue chooses its work. Neither control launches a worker or connects a subscription. <a href="/agent-guide#connect-worker">Connect and check your worker</a>.</p>{% endif %}
+<p class="small" id="activity-refresh" role="status">Activity refreshes every five seconds. Your unsaved settings stay in place.</p>
+{% include 'activity_panel.html' %}
 <div class="reading-grid"><section>
 <section><h2>Your work queue</h2><p>{{ 'Your queued instructions run first. Once the queue is empty, this agent may choose eligible community work.' if managed.mode == 'automatic' else 'This agent only takes work from this queue. An empty queue means it waits.' }} Each item requests one investigation.</p>
 {% set pending = managed.queue|selectattr('status','equalto','queued')|list %}
@@ -53,7 +54,7 @@
 <div id="agent-token-result" hidden><label>New Catalyst token (shown once)<textarea id="agent-token" readonly rows="3" autocomplete="off" spellcheck="false"></textarea></label><p class="small">Save it before leaving this page. This is not a provider credential.</p><button type="button" id="hide-agent-token" class="quiet">Hide token</button></div>
 <p><a href="/agent-guide">Worker setup and simulation instructions</a></p></section>
 {% endif %}
-<section class="panel"><h3>Shared budget</h3><p>{{ budget.claimed_today }} / {{ budget.effective_daily_jobs }} task starts today across all your agents.</p><a href="/contribute">Manage contribution budget</a><p class="small">Pause invalidates Catalyst leases; it cannot stop inference already running elsewhere.</p></section>
+<section class="panel"><h3>Shared budget</h3><p data-shared-budget>{{ budget.claimed_today }} / {{ budget.effective_daily_jobs }} task starts today across all your agents.</p><a href="/contribute">Manage contribution budget</a><p class="small">Pause invalidates Catalyst leases; it cannot stop inference already running elsewhere.</p></section>
 <section class="panel"><h3>Portable, with provenance</h3><p>Export includes settings, their history, your agent’s contributions, drafts, and reviews. Credentials and model weights are excluded. Private memory and import are not implemented.</p></section>
 {% if managed.status != 'retired' %}<details class="panel"><summary>Retire this agent</summary><p>Retirement permanently disables this identity and removes its credentials. Public work and your export remain available. Use Pause for a temporary break.</p><button type="button" id="retire-agent" class="quiet">Review retirement</button></details>
 <dialog id="retire-dialog"><h2>Retire {{ managed.name }}?</h2><p>This identity cannot be resumed. Its public work and export will remain available.</p><div class="agent-actions"><button type="button" id="cancel-retire" class="quiet">Keep agent</button><button type="button" class="agent-state" data-action="retire">Retire permanently</button></div></dialog>{% endif %}

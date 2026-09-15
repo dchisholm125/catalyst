@@ -1,7 +1,7 @@
 """Human agenda and bounded agent work. Popularity never grants permissions."""
 import time
 from fastapi import HTTPException
-from .db import canonical, uid
+from .db import canonical, digest, uid
 from . import domain
 from .models import IdeaInput
 
@@ -42,23 +42,32 @@ MAX_ACTIVE_PER_IDEA = 2
 MAX_AWAITING_REVIEW = 3
 
 
-def list_signals(con, topic=""):
-    return [dict(r) for r in con.execute(
+def list_signals(con, topic="", owner="", offset=0, limit=100):
+    from .questions import annotate
+    return [annotate(con, r) for r in con.execute(
         "SELECT s.*,a.name,t.label AS topic_label,l.idea_id,"
         "(SELECT count(*) FROM signal_support v WHERE v.signal_id=s.id) AS supporters "
         "FROM agenda_signals s JOIN actors a ON a.id=s.actor_id JOIN agenda_topics t ON t.id=s.topic_id "
         "LEFT JOIN signal_links l ON l.signal_id=s.id WHERE (?='' OR s.topic_id=?) "
-        "ORDER BY s.created DESC,s.id LIMIT 100", (topic, topic))]
+        "AND (?='' OR s.actor_id=?) ORDER BY s.created DESC,s.id LIMIT ? OFFSET ?", (topic, topic, owner, owner, limit, offset))]
 
 
 def get_signal(con, signal_id):
-    return domain.require(con.execute(
+    from .questions import annotate
+    return annotate(con, domain.require(con.execute(
         "SELECT s.*,a.name,t.label AS topic_label,l.idea_id FROM agenda_signals s "
         "JOIN actors a ON a.id=s.actor_id JOIN agenda_topics t ON t.id=s.topic_id "
-        "LEFT JOIN signal_links l ON l.signal_id=s.id WHERE s.id=?", (signal_id,)).fetchone(), "Question not found")
+        "LEFT JOIN signal_links l ON l.signal_id=s.id WHERE s.id=?", (signal_id,)).fetchone(), "Question not found"))
 
 
 def submit_signal(con, data, actor):
+    fingerprint = digest(canonical(data.model_dump(exclude={'request_key'})))
+    if data.request_key:
+        old = con.execute('SELECT * FROM question_receipts WHERE actor_id=? AND request_key=?', (actor['id'], data.request_key)).fetchone()
+        if old:
+            if old['request_hash'] != fingerprint:
+                raise HTTPException(409, 'This submission receipt belongs to different text. Reload before submitting a different question.')
+            return old['signal_id']
     domain.require(con.execute("SELECT id FROM agenda_topics WHERE id=?", (data.topic_id,)).fetchone(), "Topic not found")
     count = con.execute("SELECT count(*) FROM agenda_signals WHERE actor_id=? AND created>?", (actor["id"], time.time()-86400)).fetchone()[0]
     if count >= 10:
@@ -66,6 +75,8 @@ def submit_signal(con, data, actor):
     signal_id = uid()
     con.execute("INSERT INTO agenda_signals VALUES (?,?,?,?,?,?,?,?)", (signal_id, data.topic_id, data.title, data.body,
                 actor["id"], data.origin_kind, data.assistance, time.time()))
+    if data.request_key:
+        con.execute('INSERT INTO question_receipts VALUES (?,?,?,?)', (actor['id'], data.request_key, fingerprint, signal_id))
     return signal_id
 
 
@@ -73,6 +84,8 @@ def develop_signal(con, signal_id, data, actor):
     signal = get_signal(con, signal_id)
     if signal["idea_id"]:
         raise HTTPException(409, "This question already has a Living Idea; develop that instead")
+    if signal['review_status'] in ('declined', 'needs-clarification'):
+        raise HTTPException(409, 'Record a return to review before developing this question')
     origin = f'Human agenda question from {signal["name"]}: {signal["title"]}\n\n{signal["body"]}'
     if signal["assistance"]:
         origin += f'\n\nDeclared assistance: {signal["assistance"]}'
@@ -143,12 +156,15 @@ def enrich_job(con, job, actor):
     brief = con.execute("SELECT * FROM task_briefs WHERE task_id=?", (job["task_id"],)).fetchone()
     role = brief["role"] if brief else "researcher"
     agenda = get_signal(con, brief["signal_id"]) if brief and brief["signal_id"] else None
+    if agenda:
+        from .questions import history
+        agenda['review_history'] = history(con, agenda['id'])
     current = domain.idea(con, job["idea_id"])
     origin = con.execute("SELECT origin_kind FROM idea_origins WHERE idea_id=?", (job["idea_id"],)).fetchone()
     job.update({"idea": {"id": current["id"], "title": current["title"], "kind": current["kind"],
                          "origin": current["origin"], "origin_kind": origin[0] if origin else "unspecified"},
                 "requested_head_id": brief["requested_head_id"] if brief else current["head_id"],
-                "contract_version": "0.3", "role": role, "role_purpose": ROLES[role][1],
+                "contract_version": "0.4", "role": role, "role_purpose": ROLES[role][1],
                 "success_criteria": brief["success_criteria"] if brief else ROLES[role][2],
                 "tier": brief["tier"] if brief else 2, "human_agenda": agenda,
                 "agent_history": work_history(con, actor["id"]),

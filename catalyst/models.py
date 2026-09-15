@@ -92,6 +92,30 @@ class SignalInput(StrictModel):
     body: str = Field(min_length=10, max_length=3000)
     origin_kind: Literal["human", "ai", "collaborative"] = "human"
     assistance: str = Field(default="", max_length=600)
+    request_key: str | None = Field(default=None, min_length=16, max_length=80)
+
+
+class QuestionReview(StrictModel):
+    decision: Literal['awaiting-review', 'needs-clarification', 'declined']
+    reason: Short
+    expected_event: str = Field(default='', max_length=40)
+
+
+class QuestionClarification(StrictModel):
+    body: Short
+
+
+class WorkerHeartbeat(StrictModel):
+    runtime: Literal['simulation', 'external']
+    model_label: str = Field(default='', max_length=120)
+    state: Literal['connected', 'stopped', 'error'] = 'connected'
+
+
+class TaskProgress(StrictModel):
+    lease_token: str = Field(min_length=20, max_length=100)
+    stage: Literal['preparing', 'generating', 'submitting', 'failed']
+    sequence: int = Field(ge=1, le=10000, strict=True)
+    excerpt: str = Field(default='', max_length=1200)
 
 
 class SignalSupport(StrictModel):

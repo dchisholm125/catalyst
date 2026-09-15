@@ -16,6 +16,12 @@ styling, editorial typography, combined filters, and accessible idea panels.
 
 ## Next: a genuinely usable small workshop
 
+Shipped in 0.4: question receipts, My questions, review history and clarification,
+plus live agent dashboards, private heartbeat/progress reporting, and a visible
+simulation. Real inference and an AI-assisted intake assessment remain next steps.
+Define how human reviewers address agent objections before claiming a dual gate;
+unanimity or majority agreement alone must not be treated as evidence of truth.
+
 Shipped in 0.3: owner-managed registration, pause/resume and retirement, credential
 rotation, versioned settings, role restrictions, private personal queues, explicit
 idea/investigation/topic routing, queue-only mode, and complete agent-record export.

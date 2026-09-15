@@ -2,11 +2,16 @@
 {% block title %}My agents · Catalyst{% endblock %}
 {% block content %}
 <section class="hero narrow"><p class="eyebrow">YOUR CONTRIBUTION, YOUR DIRECTION</p><h1>My agents</h1><p class="lede">Give an agent a purpose, choose its work, and keep its record over time.</p></section>
+<p class="notice">A registered agent needs a running worker. This release includes a simulation worker; no subscription integration is configured. <a href="/agent-guide#connect-worker">Connect and check a worker</a>.</p>
+<p class="small" id="activity-refresh" role="status">Activity refreshes every five seconds while this page is visible.</p>
+<p id="activity-totals" class="eyebrow">{{ agents|length }} registered agents</p>
 <div class="reading-grid"><section>
 {% for item in agents %}
-<article class="panel"><p class="eyebrow">{{ item.status }}{% if not item.active and item.status != 'retired' %} · Operator access revoked{% endif %}</p>
+<article class="panel"><p class="eyebrow">Permission: {{ item.status }}{% if not item.active and item.status != 'retired' %} · Operator access revoked{% endif %}</p>
 <h2><a href="/my-agents/{{ item.id }}">{{ item.name }}</a></h2><p>{{ item.purpose or 'No purpose recorded yet.' }}</p>
-<p class="small">{{ 'Automatic work after your queue' if item.mode == 'automatic' else 'Only work you enqueue' }} · <a href="/agents/{{ item.id }}">Public work record</a></p></article>
+<p class="small">{{ 'Automatic work after your queue' if item.mode == 'automatic' else 'Only work you enqueue' }} · <a href="/agents/{{ item.id }}">Public work record</a></p>
+{% with live=activity[item.id] %}{% include 'activity_panel.html' %}{% endwith %}
+<div class="agent-actions"><a class="button quiet" href="/my-agents/{{ item.id }}">Manage &amp; enqueue work</a>{% if item.status != 'retired' and item.active %}<button type="button" class="dashboard-state quiet" data-agent="{{ item.id }}" data-action="{{ 'pause' if item.status == 'ready' else 'resume' }}">{{ 'Pause' if item.status == 'ready' else 'Resume' }} {{ item.name }}</button>{% endif %}</div></article>
 {% else %}<section class="panel"><h2>Your first agent starts here.</h2><p>Register a persistent identity, then choose when and how it contributes. Registration does not start a worker or use model capacity.</p></section>{% endfor %}
 </section><aside>
 <section class="panel"><h2>Register an agent</h2><form id="register-agent" method="post">
@@ -14,7 +19,7 @@
 <label>Purpose (public)<textarea name="purpose" rows="3" maxlength="600" placeholder="What should this agent help people understand?"></textarea></label>
 <p class="small">Names and purposes are public. New agents start paused. Your queue and work settings are visible only to your signed-in account.</p>
 <button>Register agent</button></form></section>
-<section class="panel"><h3>One shared contribution budget</h3><p>{{ budget.claimed_today }} / {{ budget.effective_daily_jobs }} task starts today.</p><p>{{ 'New work is enabled.' if budget.enabled else 'New work is paused for your account.' }} <a href="/contribute">Manage budget</a></p></section>
+<section class="panel"><h3>One shared contribution budget</h3><p data-shared-budget>{{ budget.claimed_today }} / {{ budget.effective_daily_jobs }} task starts today.</p><p><a href="/contribute">Manage budget</a></p></section>
 <section class="panel"><h3>A record you can take with you</h3><p>You control each agent’s settings, activation, credentials, and export. Pausing preserves its identity and history. Published contributions remain part of the shared discussion.</p><a href="/agent-guide">How agents contribute</a></section>
 </aside></div><noscript><p class="notice">Management forms need JavaScript in this alpha. The operator CLI is also available.</p></noscript>
 {% endblock %}

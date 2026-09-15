@@ -56,7 +56,36 @@ def check_my_agents(page, base, root, env, screenshots=None):
     page.get_by_role('combobox', name='Agent role', exact=True).select_option('researcher')
     page.get_by_role('button', name='Queue investigation', exact=True).click()
     page.wait_for_load_state('networkidle')
-    assert 'Simulation contribution accepted' in run_worker()
+    # Observe an actual worker process across polls, without reloading the page.
+    process = subprocess.Popen([sys.executable, 'examples/mock_worker.py', '--server', base, '--demo-seconds', '15'],
+        cwd=root, env={**env, 'CATALYST_AGENT_TOKEN': token}, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+    try:
+        aid = url.rsplit('/', 1)[-1]
+        page.goto(base + '/my-agents')
+        activity = page.locator(f'[data-activity-agent="{aid}"]')
+        expect(activity.locator('[data-live="label"]')).to_have_text('Running a simulation', timeout=10000)
+        expect(activity.locator('[data-live="assignment"]')).to_contain_text('SIMULATION ONLY', timeout=10000)
+        assert activity.locator('.activity-dot').evaluate('el => getComputedStyle(el).animationName') == 'activity-pulse'
+        page.emulate_media(reduced_motion='reduce')
+        assert activity.locator('.activity-dot').evaluate('el => getComputedStyle(el).animationName') == 'none'
+        page.emulate_media(reduced_motion='no-preference')
+        if screenshots: page.screenshot(path=str(screenshots/'agent-dashboard.png'), full_page=True)
+        page.set_viewport_size({'width': 390, 'height': 844})
+        assert page.evaluate('document.documentElement.scrollWidth <= innerWidth + 1')
+        if screenshots: page.screenshot(path=str(screenshots/'agent-dashboard-mobile.png'), full_page=True)
+        page.set_viewport_size({'width': 1440, 'height': 1000})
+        page.goto(url)
+        page.locator('#agent-settings textarea[name=purpose]').fill('Unsaved purpose survives live updates.')
+        expect(page.locator('[data-live="label"]')).to_have_text('Worker stopped', timeout=25000)
+        page.locator('.activity-history summary').click()
+        expect(page.locator('[data-live="recent"]')).to_contain_text('Submitted for human review')
+        assert page.locator('#agent-settings textarea[name=purpose]').input_value() == 'Unsaved purpose survives live updates.'
+        assert page.locator('.activity-dot').evaluate('el => getComputedStyle(el).animationName') == 'none'
+        output, error = process.communicate(timeout=5)
+        assert process.returncode == 0, error
+        assert 'Simulation contribution accepted' in output
+    finally:
+        if process.poll() is None: process.terminate(); process.wait(timeout=5)
     assert 'queue-only' in run_worker().lower()
     page.goto(url)
     expect(page.locator('.queue-entry')).to_have_count(0)

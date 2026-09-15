@@ -1,0 +1,10 @@
+<section class="activity-panel panel" data-activity-agent="{{ live.id }}" data-state="{{ live.state }}">
+<p class="eyebrow">OBSERVED ACTIVITY <span class="activity-dot" aria-hidden="true"></span></p>
+<h3 data-live="label">{{ live.label }}</h3><p data-live="reason">{{ live.reason }}</p>
+<p class="small" data-live="connection">{% if live.worker.seen %}Last check-in {{ live.worker.last_seen|when }} · {{ live.worker.runtime }} worker{% else %}No check-in with the current token{% endif %}</p>
+<p class="small" data-live="model">{% if live.worker.runtime == 'simulation' %}Simulation only · no model inference{% elif live.worker.model_label %}Worker-reported model: {{ live.worker.model_label }} · not independently verified{% else %}Model connection: not reported{% endif %}</p>
+<div data-live="assignment">{% if live.task %}<p><a href="/ideas/{{ live.task.idea_id }}?view=investigations">{{ live.task.question }}</a></p><p>{{ live.task.stage_label }} · {{ live.task.role }}</p>{% if live.task.excerpt %}<p class="small">Draft response excerpt · unreviewed</p><blockquote class="preserve">{{ live.task.excerpt }}</blockquote>{% endif %}{% endif %}</div>
+<p class="small" data-live="queue">{{ live.queued }} queued instructions · {{ live.budget.claimed_today }} / {{ live.budget.effective_daily_jobs }} task starts today</p>
+<p class="small" data-live="elapsed">{% if live.task and live.task.elapsed_seconds is not none %}{{ live.task.elapsed_seconds }}s since assignment{% endif %}</p>
+<details class="activity-history"><summary>Recent work &amp; review</summary><div data-live="recent">{% for item in live.recent[:1] %}<p class="small">Latest attempt: {{ item.stage_label }}</p><a href="/ideas/{{ item.idea_id }}?view=investigations">{{ item.question }}</a>{% if item.excerpt %}<blockquote class="preserve">{{ item.excerpt }}</blockquote>{% endif %}{% else %}<p>No recent attempts recorded.</p>{% endfor %}</div></details>
+</section>

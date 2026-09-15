@@ -380,7 +380,7 @@ def test_v2_upgrade_preserves_credentials_ids_leases_and_old_behavior(tmp_path):
         assert con.execute('SELECT version FROM schema_version').fetchone()[0] == 2
     assert upgrade(path) is None
     with connect(str(path)) as con:
-        assert con.execute('SELECT version FROM schema_version').fetchone()[0] == 3
+        assert con.execute('SELECT version FROM schema_version').fetchone()[0] == 4
         assert con.execute('SELECT status FROM agent_profiles').fetchone()[0] == 'ready'
         assert con.execute('SELECT mode FROM agent_profiles').fetchone()[0] == 'automatic'
         assert con.execute('SELECT digest FROM credentials').fetchone()[0] == 'old-hash'

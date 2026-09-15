@@ -165,7 +165,7 @@ def change_queue(con, agent_id, entry_id, owner, action):
         con.execute('UPDATE agent_queue SET position=? WHERE id=?', (position, entry_id))
 
 
-def select_task(con, actor, roles, mode):
+def select_task(con, actor, roles, mode, preview=False):
     """Strict queue order; entries do not reserve public tasks against others."""
     for entry in con.execute("SELECT * FROM agent_queue WHERE agent_id=? AND status='queued' ORDER BY position,created,id", (actor['id'],)).fetchall():
         task_id = entry['resolved_task_id'] or (entry['target_id'] if entry['target_kind'] == 'task' else None)
@@ -173,8 +173,9 @@ def select_task(con, actor, roles, mode):
             task = domain.require(con.execute('SELECT * FROM tasks WHERE id=?', (task_id,)).fetchone())
             if task['status'] in ('completed', 'cancelled') or (task['attempts'] >= 3 and task['status'] != 'leased'):
                 status = 'completed' if task['status'] == 'completed' and task['agent_id'] == actor['id'] else 'unavailable'
-                con.execute('UPDATE agent_queue SET status=?,note=? WHERE id=?',
-                            (status, 'Investigation finished, cancelled, or exhausted its attempts', entry['id']))
+                if not preview:
+                    con.execute('UPDATE agent_queue SET status=?,note=? WHERE id=?',
+                                (status, 'Investigation finished, cancelled, or exhausted its attempts', entry['id']))
                 continue
         desired_roles = [r for r in roles if not entry['role'] or r == entry['role']]
         task = workshop.eligible_task(con, desired_roles,
@@ -182,7 +183,8 @@ def select_task(con, actor, roles, mode):
             idea_id=entry['target_id'] if not task_id and entry['target_kind'] == 'idea' else None,
             topic_id=entry['target_id'] if not task_id and entry['target_kind'] == 'topic' else None)
         if task:
-            con.execute('UPDATE agent_queue SET resolved_task_id=? WHERE id=?', (task['id'], entry['id']))
+            if not preview:
+                con.execute('UPDATE agent_queue SET resolved_task_id=? WHERE id=?', (task['id'], entry['id']))
             return task, None
         return None, 'Your next queue item is waiting for eligible work, a compatible role, or human review. Reorder or remove it to change direction.'
     if mode == 'queue-only':

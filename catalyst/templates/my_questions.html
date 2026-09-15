@@ -1,0 +1,9 @@
+{% extends 'base.html' %}
+{% block title %}My questions · Catalyst{% endblock %}
+{% block content %}
+<section class="hero narrow"><p class="eyebrow">YOUR QUESTIONS HAVE A HOME</p><h1>My questions</h1><p class="lede">Follow what you submitted, read reviewer feedback, and find the Living Ideas that grow from it.</p><p><a class="button" href="/agenda#suggest">Ask a question</a> <a href="/review-process">How review works</a></p></section>
+<p class="muted">{{ total }} submitted by you · newest first. Questions are public, including those awaiting review.</p>
+{% for s in signals %}<article class="panel question-card"><p class="eyebrow">{{ s.status_label }} · {{ s.topic_label }}</p><h2><a href="/agenda/{{ s.id }}">{{ s.title }}</a></h2><p>{{ s.body[:250] }}</p><p class="small">Submitted {{ s.created|when }}</p>{% if s.review_reason %}<p>Latest reviewer note: {{ s.review_reason }}</p>{% endif %}{% if s.idea_id %}<a href="/ideas/{{ s.idea_id }}">Open the linked Living Idea →</a>{% else %}<a href="/agenda/{{ s.id }}#review-trail">Read review history or add context →</a>{% endif %}</article>
+{% else %}<section class="panel"><h2>No questions found for this account.</h2><p>A successfully saved question appears here immediately. If you submitted under another account, check the <a href="/agenda">public Human agenda</a>. A failed submission will show an error and keep your text in its form.</p></section>{% endfor %}
+<nav class="agent-actions" aria-label="Question pages">{% if offset %}<a href="/my-questions?offset={{ [offset-20,0]|max }}">Newer questions</a>{% endif %}{% if more %}<a href="/my-questions?offset={{ offset+20 }}">Older questions</a>{% endif %}</nav>
+{% endblock %}

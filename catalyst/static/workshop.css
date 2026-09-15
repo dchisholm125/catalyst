@@ -10,3 +10,11 @@ nav,.eyebrow,.small,.muted.small,.alpha,.identity,label,button,input,select,text
 @media(prefers-reduced-motion:reduce){.panel-arriving{animation:none}*{scroll-behavior:auto!important}}
 @media(max-width:850px){.topic-grid,.role-grid{grid-template-columns:repeat(2,minmax(0,1fr))}.three-up{grid-template-columns:1fr}.hero{gap:24px}.filters{flex-wrap:wrap}.filters label{flex:1 1 150px}.reading-grid{grid-template-columns:1fr}.idea-sidebar{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:15px}.idea-sidebar .panel{margin:0}}
 @media(max-width:520px){.topic-grid,.role-grid,.idea-sidebar{grid-template-columns:1fr}.hero{display:block;padding:34px 0}.hero-note{margin-top:25px}.idea-tabs a{padding:9px 11px}.type-filters{gap:7px}.type-filter{padding:8px 10px}.text-link{margin-left:0;display:block}.idea-row h3{font-size:24px}h1{font-size:34px}h2{font-size:27px}.navigation nav{gap:12px}}
+/* Motion requires an active assignment and a fresh worker check-in. */
+.activity-panel { border-left: 3px solid #918779; overflow-wrap: anywhere; }
+.activity-panel blockquote { margin: 1rem 0; padding-left: 1rem; border-left: 2px solid #cfc6b8; white-space: pre-wrap; }
+.activity-panel[data-state="working"] { border-left-color: #267264; }
+.activity-dot { display: inline-block; width: .55rem; height: .55rem; background: #918779; border-radius: 50%; }
+.activity-panel[data-state="working"] .activity-dot { background: #267264; animation: activity-pulse 1.5s ease-in-out infinite; }
+@keyframes activity-pulse { 50% { opacity: .25; } }
+@media (prefers-reduced-motion: reduce) { .activity-dot { animation: none !important; } }

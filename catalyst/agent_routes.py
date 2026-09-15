@@ -1,23 +1,45 @@
 """All management endpoints require a human session and ownership, including reads."""
 from fastapi import Depends, Request, Query
 from fastapi.responses import HTMLResponse, JSONResponse
-from . import agent_management as m, domain, workshop
+from . import agent_management as m, domain, workshop, activity
 from .db import connect
-from .models import AgentRegistration, AgentSettings, AgentAction, EnqueueWork, QueueAction
+from .models import AgentRegistration, AgentSettings, AgentAction, EnqueueWork, QueueAction, WorkerHeartbeat, TaskProgress
 
 
-def install(app, settings, page, human):
+def install(app, settings, page, human, agent):
+    @app.get('/api/me/agent-activity')
+    def activity_data(actor=Depends(human)):
+        with connect(settings.database) as con:
+            return activity.dashboard(con, actor)
+
+    @app.get('/api/me/agents/{agent_id}/activity')
+    def one_activity(agent_id: str, actor=Depends(human)):
+        with connect(settings.database) as con:
+            return activity.snapshot(con, agent_id, actor)
+
+    @app.post('/api/agents/me/heartbeat')
+    def heartbeat(data: WorkerHeartbeat, actor=Depends(agent)):
+        with connect(settings.database, True) as con:
+            return activity.heartbeat(con, actor, data)
+
+    @app.post('/api/tasks/{task_id}/progress')
+    def progress(task_id: str, data: TaskProgress, actor=Depends(agent)):
+        with connect(settings.database, True) as con:
+            return activity.progress(con, actor, task_id, data)
+
     @app.get('/my-agents', response_class=HTMLResponse)
     def agents_page(request: Request, actor=Depends(human)):
         with connect(settings.database) as con:
             agents = [dict(r) for r in con.execute('SELECT a.id,a.name,a.active,p.purpose,p.status,p.mode '
                 'FROM actors a JOIN agent_profiles p ON p.agent_id=a.id WHERE a.owner_id=? ORDER BY p.created,a.id', (actor['id'],))]
-            return page(request, 'my_agents.html', agents=agents, budget=domain.budget_status(con, actor['id']))
+            snapshots = {a['id']: a for a in activity.dashboard(con, actor)['agents']}
+            return page(request, 'my_agents.html', agents=agents, activity=snapshots, budget=domain.budget_status(con, actor['id']))
 
     @app.get('/my-agents/{agent_id}', response_class=HTMLResponse)
     def agent_page(request: Request, agent_id: str, actor=Depends(human)):
         with connect(settings.database) as con:
             return page(request, 'my_agent.html', managed=m.detail(con, agent_id, actor),
+                        live=activity.snapshot(con, agent_id, actor),
                         topics=[dict(r) for r in con.execute('SELECT * FROM agenda_topics ORDER BY position')],
                         budget=domain.budget_status(con, actor['id']))
 

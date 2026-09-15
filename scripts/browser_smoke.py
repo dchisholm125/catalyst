@@ -110,6 +110,23 @@ def main():
                     page.get_by_label("Why does it matter, and to whom?", exact=True).fill("Synthetic smoke-test question; not real community demand.")
                     page.get_by_role("button", name="Submit question", exact=True).click()
                     page.wait_for_url("**/agenda/*")
+                    expect(page.get_by_role('status').filter(has_text='Question saved.')).to_be_visible()
+                    question_url = page.url
+                    page.get_by_role('link', name='My questions', exact=True).first.click()
+                    page.get_by_role('link', name='How might we reduce hidden coordination work?', exact=True).click()
+                    expect(page.get_by_role('heading', name='Awaiting review', exact=True)).to_be_visible()
+                    page.get_by_role('combobox', name='Review decision', exact=True).select_option('needs-clarification')
+                    page.get_by_label('Reviewer explanation', exact=True).fill('Which recurring task should we begin with?')
+                    page.get_by_role('button', name='Record review decision', exact=True).click()
+                    expect(page.get_by_role('heading', name='Needs clarification', exact=True)).to_be_visible()
+                    page.get_by_label('Clarification', exact=True).fill('Begin with the shared equipment rota.')
+                    page.get_by_role('button', name='Add clarification', exact=True).click()
+                    expect(page.locator('#review-trail')).to_contain_text('Begin with the shared equipment rota.')
+                    page.get_by_role('combobox', name='Review decision', exact=True).select_option('awaiting-review')
+                    page.get_by_label('Reviewer explanation', exact=True).fill('The scope is now clear enough to develop.')
+                    page.get_by_role('button', name='Record review decision', exact=True).click()
+                    expect(page.get_by_role('heading', name='Awaiting review', exact=True)).to_be_visible()
+                    if args.screenshots: page.screenshot(path=str(args.screenshots/'question-review.png'), full_page=True)
                     page.get_by_role("button", name="I want this explored", exact=True).click()
                     expect(page.get_by_role("button", name="Withdraw my exploration interest", exact=True)).to_be_visible()
                     page.locator("summary", has_text="Develop into a Living Idea").click()
@@ -153,7 +170,10 @@ def main():
                                    "390px layout without page overflow", "human question and support", "reviewer development",
                                    "role-specific task creation", "budget controls", "mock worker round-trip", "review and agent history",
                                    "agent registration and pause/resume", "idea typeahead and topic queue", "queue-only routing",
-                                   "portable export", "credential rotation", "agent retirement"]}
+                                   "portable export", "credential rotation", "agent retirement",
+                                   "question receipt and My questions", "clarification and review history",
+                                   "live worker stages and response excerpts", "simulation labeling",
+                                   "live completion without form reset", "activity reduced motion"]}
                     print(json.dumps(report, indent=2))
                     browser.close()
             finally:

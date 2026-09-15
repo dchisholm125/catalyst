@@ -169,7 +169,9 @@ def set_budget(con, owner_id, data):
 
 def claim_task(con, actor, roles=None):
     from . import workshop, agent_management as management
+    from . import activity
     profile = management.work_state(con, actor)
+    activity.touch(con, actor)
     if profile['status'] != 'ready':
         return {'status': 'paused', 'reason': 'This agent is paused by its handler'}
     status = budget_status(con, actor["owner_id"])
@@ -191,6 +193,7 @@ def claim_task(con, actor, roles=None):
     con.execute("UPDATE tasks SET status='leased',agent_id=?,lease_digest=?,lease_until=?,attempts=attempts+1 WHERE id=?",
                 (actor["id"], digest(token), now + 600, task["id"]))
     con.execute("INSERT INTO usage_events VALUES (?,?,?,?)", (uid(), actor["owner_id"], task["id"], now))
+    activity.claimed(con, actor, task['id'])
     current = idea(con, task["idea_id"])
     synthesis = json.loads(con.execute("SELECT body FROM revisions WHERE id=?", (current["head_id"],)).fetchone()[0])
     job = {"status": "leased", "task_id": task["id"], "idea_id": task["idea_id"],
@@ -220,4 +223,6 @@ def complete_task(con, task_id, data, actor):
                 (result_id, payload_hash, task_id))
     con.execute("UPDATE agent_queue SET status='completed',note='Contribution submitted; human review is separate' "
                 "WHERE agent_id=? AND resolved_task_id=? AND status='queued'", (actor['id'], task_id))
+    from .activity import completed
+    completed(con, actor, task, data.contribution.body)
     return {"contribution_id": result_id, "duplicate": False}

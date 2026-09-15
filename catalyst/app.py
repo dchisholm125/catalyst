@@ -48,7 +48,7 @@ def create_app(settings: Settings | None = None):
         initialize(settings.database)
         yield
 
-    app = FastAPI(title="Catalyst", version="0.3.0", lifespan=lifespan,
+    app = FastAPI(title="Catalyst", version="0.4.0", lifespan=lifespan,
                   description="Human-directed living ideas. Consumer subscription integrations are not connected.")
     app.state.settings = settings
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=list(settings.allowed_hosts))
@@ -368,5 +368,5 @@ def create_app(settings: Settings | None = None):
     from .workshop_routes import install
     install(app, settings, page, human, reviewer, agent)
     from .agent_routes import install as install_agents
-    install_agents(app, settings, page, human)
+    install_agents(app, settings, page, human, agent)
     return app

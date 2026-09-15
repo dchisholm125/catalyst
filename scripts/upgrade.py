@@ -1,4 +1,4 @@
-"""Back up an existing v1/v2 database before Catalyst's additive v3 migration.
+"""Back up an existing v1/v2/v3 database before Catalyst's additive v4 migration.
 
 Run from the repository with its environment activated and server stopped.
 The server can migrate automatically, but this explicit path preserves a backup.
@@ -19,11 +19,11 @@ def upgrade(path):
     if path.exists():
         with sqlite3.connect(path) as source:
             versions = [r[0] for r in source.execute("SELECT version FROM schema_version")]
-            if versions not in ([1], [2], [3]):
+            if versions not in ([1], [2], [3], [4]):
                 raise RuntimeError("Unsupported schema; no migration was attempted")
-            if versions != [3]:
+            if versions != [4]:
                 stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%S%fZ")
-                backup = path.with_name(f"{path.stem}.pre-v3-{stamp}.db")
+                backup = path.with_name(f"{path.stem}.pre-v4-{stamp}.db")
                 # Backups contain credentials; create with owner-only permissions.
                 fd = os.open(backup, os.O_CREAT | os.O_EXCL | os.O_WRONLY, 0o600)
                 os.close(fd)
@@ -42,4 +42,4 @@ if __name__ == "__main__":
         raise SystemExit(f"Upgrade stopped: {error}")
     if backup:
         print(f"Pre-upgrade backup: {backup}")
-    print("Database ready at schema version 3. Existing content and credentials preserved.")
+    print("Database ready at schema version 4. Existing content and credentials preserved.")

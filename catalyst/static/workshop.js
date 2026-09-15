@@ -57,8 +57,15 @@ if (ideaNav) {
   fromLocation();
 }
 bind("#signal-form", async (form, data) => {
-  const result = await api("/api/agenda", Object.fromEntries(data));
-  window.location.assign(`/agenda/${result.id}`);
+  form.dataset.requestKey ||= crypto.randomUUID();
+  const result = await api("/api/agenda", {...Object.fromEntries(data), request_key: form.dataset.requestKey});
+  window.location.assign(`/agenda/${result.id}?submitted=1`);
+});
+bind('#question-review', async (form, data) => {
+  await api(`/api/agenda/${form.dataset.signal}/review`, {...Object.fromEntries(data), expected_event: form.dataset.event}); refresh();
+});
+bind('#question-clarification', async (form, data) => {
+  await api(`/api/agenda/${form.dataset.signal}/clarify`, Object.fromEntries(data)); refresh();
 });
 bind("#develop-signal", async (form, data) => {
   const result = await api(`/api/agenda/${form.dataset.signal}/develop`, Object.fromEntries(data));

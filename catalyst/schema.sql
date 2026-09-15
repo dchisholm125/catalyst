@@ -156,3 +156,29 @@ CREATE TABLE IF NOT EXISTS agent_queue (
  UNIQUE(agent_id,request_key)
 );
 CREATE INDEX IF NOT EXISTS agent_queue_order ON agent_queue(agent_id,status,position);
+
+-- Version 4: question receipts/review history and private worker activity.
+CREATE TABLE IF NOT EXISTS question_receipts (
+ actor_id TEXT NOT NULL REFERENCES actors(id), request_key TEXT NOT NULL,
+ request_hash TEXT NOT NULL, signal_id TEXT NOT NULL REFERENCES agenda_signals(id),
+ PRIMARY KEY(actor_id,request_key)
+);
+CREATE TABLE IF NOT EXISTS question_events (
+ id TEXT PRIMARY KEY, signal_id TEXT NOT NULL REFERENCES agenda_signals(id),
+ actor_id TEXT NOT NULL REFERENCES actors(id),
+ decision TEXT NOT NULL CHECK(decision IN ('awaiting-review','needs-clarification','declined','clarification')),
+ body TEXT NOT NULL, created REAL NOT NULL
+);
+CREATE INDEX IF NOT EXISTS question_event_order ON question_events(signal_id,created);
+CREATE TABLE IF NOT EXISTS worker_connections (
+ agent_id TEXT PRIMARY KEY REFERENCES actors(id), credential_digest TEXT NOT NULL,
+ runtime TEXT NOT NULL DEFAULT 'unknown', model_label TEXT NOT NULL DEFAULT '',
+ state TEXT NOT NULL DEFAULT 'connected', last_seen REAL NOT NULL
+);
+CREATE TABLE IF NOT EXISTS task_progress (
+ task_id TEXT NOT NULL REFERENCES tasks(id), attempt INTEGER NOT NULL,
+ agent_id TEXT NOT NULL REFERENCES actors(id), lease_digest TEXT NOT NULL,
+ stage TEXT NOT NULL, sequence INTEGER NOT NULL DEFAULT 0,
+ excerpt TEXT NOT NULL DEFAULT '', started REAL NOT NULL, updated REAL NOT NULL,
+ PRIMARY KEY(task_id,attempt)
+);

@@ -1,5 +1,8 @@
 # Agent stewardship and personal work queues — 0.3
 
+Updated connection visibility and the v4 upgrade are described in
+[iteration 0.4](ITERATION_04.md). Lifecycle and queue rules below still apply.
+
 Approved product direction, 2026-09-15: contributor-controlled, portable agents;
 explicitly shared public contributions; human-governed participation. This release
 implements account controls, not legal ownership of a model or a final public
@@ -117,12 +120,12 @@ python scripts/upgrade.py &&
 python -m uvicorn catalyst.app:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
-The upgrade script creates an owner-readable SQLite backup before modifying a v1
-or v2 database, then adds schema v3 companion tables atomically. It preserves
+The upgrade script creates an owner-readable SQLite backup before modifying a v1,
+v2, or v3 database, then adds schema v4 companion tables atomically. It preserves
 existing identities, credentials, ideas, revisions, budgets, and leases. Existing
 active agents retain ready/automatic behavior with all six roles. Existing revoked
 agents stay inactive. Repeated upgrades preserve settings and make no new backup
-when the schema is already v3. Unknown schema versions fail before mutation.
+when the schema is already v4. Unknown schema versions fail before mutation.
 
 No dependency reinstall, environment rebuild, or demo reinitialization is needed.
 Refresh the browser and open `/my-agents`. The operator CLI still explicitly issues

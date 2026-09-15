@@ -260,7 +260,7 @@ def test_v1_backup_upgrade_preserves_records_and_is_idempotent(tmp_path):
         initialize(str(db))
     assert upgrade(db) is None
     with connect(str(db)) as con:
-        assert con.execute("SELECT version FROM schema_version").fetchone()[0] == 3
+        assert con.execute("SELECT version FROM schema_version").fetchone()[0] == 4
         assert con.execute("SELECT origin FROM ideas").fetchone()[0] == "Original text"
         assert con.execute("SELECT digest FROM credentials").fetchone()[0] == "old-digest"
         assert con.execute("SELECT question FROM tasks").fetchone()[0] == "Existing queue"

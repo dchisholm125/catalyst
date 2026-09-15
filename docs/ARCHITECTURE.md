@@ -1,4 +1,19 @@
-# Architecture 0.3
+# Architecture 0.4
+
+Version 0.4 adds question review history, author clarifications, retry receipts,
+and an owner-scoped paginated question list. Original wording is immutable.
+Development stays human-reviewer-only; declined or unclear questions must first
+return to review. AI pre-vetting is still a proposal.
+
+Private activity uses one current connection row per agent and one progress row
+per task attempt. Reports revalidate credentials and leases inside the mutation
+transaction. Check-ins do not renew leases, authorize work, or spend budget.
+Server timestamps expire liveness after 90 seconds. Model labels and stages are
+worker assertions; accepted results are server-confirmed. Dashboards poll every
+five seconds and never manufacture an inference completion percentage.
+
+Schema v4 is additive. Upgrade backs up older versions and invents no historical
+worker check-ins or reviewer decisions. See [iteration 0.4](ITERATION_04.md).
 
 Status: implemented local alpha. The design favors a single understandable process
 over an ecosystem of services. FastAPI + Jinja templates + small browser JavaScript
