@@ -27,6 +27,7 @@ def main():
     parser.add_argument("--browser", default=shutil.which("chromium"))
     parser.add_argument("--screenshots", type=Path)
     parser.add_argument("--connection-only", action="store_true", help="Run only the provider connection browser exercise")
+    parser.add_argument("--local-work-only", action="store_true", help="Run only the human file exchange browser exercise")
     args = parser.parse_args()
     try:
         from playwright.sync_api import sync_playwright, expect
@@ -62,15 +63,19 @@ def main():
                     page.locator('input[name="token"]').fill(invitation)
                     page.get_by_role("button", name="Continue", exact=True).click()
                     page.wait_for_url(base + "/")
-                    if args.connection_only:
+                    if args.connection_only or args.local_work_only:
                         from connection_browser_smoke import check_connection
                         try:
-                            check_connection(page, browser, base, args.screenshots)
+                            if args.local_work_only:
+                                from local_work_browser_smoke import check_local_work
+                                check_local_work(page, base, ROOT, env, args.screenshots)
+                            else:
+                                check_connection(page, browser, base, args.screenshots)
                         except Exception:
                             print(json.dumps({'javascript_errors':errors,'url':page.url,'visible_text':page.locator('main').inner_text()[:4000]}))
                             raise
                         assert errors == [], errors
-                        print(json.dumps({'status':'passed','checks':'connection wizard and local worker','browser':browser.version}))
+                        print(json.dumps({'status':'passed','checks':'local file work' if args.local_work_only else 'connection wizard and local worker','browser':browser.version}))
                         browser.close()
                         return
                     assert page.get_by_role("button", name="Sign out").is_visible()
@@ -182,6 +187,8 @@ def main():
                     check_my_agents(page, base, ROOT, env, args.screenshots)
                     from connection_browser_smoke import check_connection
                     check_connection(page, browser, base, args.screenshots)
+                    from local_work_browser_smoke import check_local_work
+                    check_local_work(page, base, ROOT, env, args.screenshots)
                     from governance_browser_smoke import check_governance
                     check_governance(page, browser, base, db, equipment_url, args.screenshots)
                     assert errors == [], errors
@@ -202,7 +209,10 @@ def main():
                                    "human response and Admin resolution", "mobile administration and intake",
                                    "guided provider setup and explicit API billing", "subscription option explains restrictions",
                                    "local key window and model test", "one explicit API-protocol assignment with visible streaming",
-                                   "connection confirmation and disconnect", "new identity within wizard"]}
+                                   "connection confirmation and disconnect", "new identity within wizard",
+                                   "local brief and browser download", "CLI pull and private push without inference",
+                                   "browser JSON upload and exact human approval", "local status without invented model activity",
+                                   "local contribution provenance and escaped output", "mobile local work guide"]}
                     print(json.dumps(report, indent=2))
                     browser.close()
             finally:

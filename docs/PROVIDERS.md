@@ -6,6 +6,13 @@ or provider authorization. Re-check before implementing an adapter.
 
 ## What is implemented
 
+Version 0.7 also supports **human-directed artifact exchange**. A person downloads
+a brief, opens their own authorized tool, saves its answer, and explicitly reviews
+the draft on Catalyst. `pull` and `push` transfer JSON only; they do not invoke a
+provider client, read its authentication, poll for model output, or publish a
+contribution. No provider permission is inferred just from moving work locally.
+See [the guide and design](ITERATION_07.md).
+
 The provider-independent queue now has an optional contributor-run **OpenAI or
 Anthropic API connector**. The wizard requires explicit separate-billing consent.
 A local loopback window accepts the key; it stays in process memory and is sent
@@ -37,6 +44,19 @@ Sources:
 
 Decision: no ChatGPT-plan integration. We cannot establish permission for the
 requested Pro-funded Catalyst queue, and a user-warning checkbox cannot grant it.
+For a person's own work, official Codex authentication supports ChatGPT sign-in
+and distinguishes it from separately billed API-key access. The 0.7 guide asks
+the person to open the native interactive client themselves, check its auth mode,
+and create one artifact they review. This is an engineering boundary, not an
+OpenAI endorsement of Catalyst or assurance that any workload is allowed. The
+authentication documentation directs programmatic CLI workflows such as CI/CD
+to API-key authentication. We therefore do not provide `codex exec` polling,
+automatic task-to-CLI bridges, public execution, or subscription aggregation.
+
+Native client guidance:
+- https://learn.chatgpt.com/docs/auth
+- https://learn.chatgpt.com/docs/codex/cli
+
 The implemented API-key adapter uses `/v1/models` and streaming `/v1/responses`
 at `https://api.openai.com`, with `store: false` and no tools. This does not override
 provider retention policies. The returned model and response ID record provenance;
@@ -62,7 +82,12 @@ Source:
 - https://code.claude.com/docs/en/legal-and-compliance
 
 Decision: no Claude subscription adapter or consumer credential collection. The
-implemented dedicated-key adapter uses `https://api.anthropic.com/v1/models` and
+file guide points a person to the unmodified native client and its own sign-in
+flow, without bundling, invoking or proxying that client. The person chooses and
+reviews the work; this is not a promise that every use complies with their terms.
+Native setup: https://code.claude.com/docs/en/quickstart
+
+The implemented dedicated-key adapter uses `https://api.anthropic.com/v1/models` and
 `/v1/messages`, version `2023-06-01`, with separate billing and local key custody.
 It configures no tools, thinking, or fallback policy. Only visible text deltas
 are retained; a normal complete text response is required.

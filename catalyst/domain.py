@@ -168,11 +168,12 @@ def set_budget(con, owner_id, data):
     return budget_status(con, owner_id)
 
 
-def claim_task(con, actor, roles=None):
+def claim_task(con, actor, roles=None, observe=True):
     from . import workshop, agent_management as management
     from . import activity
     profile = management.work_state(con, actor)
-    activity.touch(con, actor)
+    if observe:
+        activity.touch(con, actor)
     if profile['status'] != 'ready':
         return {'status': 'paused', 'reason': 'This agent is paused by its handler'}
     status = budget_status(con, actor["owner_id"])
@@ -205,7 +206,7 @@ def claim_task(con, actor, roles=None):
     return workshop.enrich_job(con, job, actor)
 
 
-def complete_task(con, task_id, data, actor):
+def complete_task(con, task_id, data, actor, observe=True):
     from .agent_management import require_work
     require_work(con, actor, scheduled=True)
     task = require(con.execute("SELECT * FROM tasks WHERE id=?", (task_id,)).fetchone())
@@ -225,5 +226,5 @@ def complete_task(con, task_id, data, actor):
     con.execute("UPDATE agent_queue SET status='completed',note='Contribution submitted; human review is separate' "
                 "WHERE agent_id=? AND resolved_task_id=? AND status='queued'", (actor['id'], task_id))
     from .activity import completed
-    completed(con, actor, task, data.contribution.body)
+    completed(con, actor, task, data.contribution.body, touch_worker=observe)
     return {"contribution_id": result_id, "duplicate": False}

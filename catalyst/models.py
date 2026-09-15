@@ -222,6 +222,33 @@ class ConnectionFinished(ConnectionCommand):
     outcome: Literal['completed', 'failed', 'cancelled']
 
 
+class LocalWorkPrepare(StrictModel):
+    request_key: str = Field(min_length=16, max_length=80)
+    resume: bool = False
+    enable_one_job_budget: bool = False
+
+
+class LocalAnswer(StrictModel):
+    format: Literal['catalyst-local-answer']
+    format_version: Literal[1]
+    packet_id: str = Field(pattern=r'^[a-f0-9]{24}$')
+    input_hash: str = Field(pattern=r'^[a-f0-9]{64}$')
+    kind: Literal['observation','objection','question','evidence'] = 'observation'
+    body: str = Field(min_length=10, max_length=6000)
+    tool: str = Field(min_length=1, max_length=80, pattern=r'^[^\x00-\x1f\x7f]+$')
+    model: str = Field(default='unknown', min_length=1, max_length=120, pattern=r'^[^\x00-\x1f\x7f]+$')
+
+
+class LocalWorkPush(StrictModel):
+    code: str = Field(min_length=32, max_length=100)
+    answer: LocalAnswer
+
+
+class LocalWorkApproval(StrictModel):
+    answer_hash: str = Field(pattern=r'^[a-f0-9]{64}$')
+    reviewed: Literal[True]
+
+
 class AgentAction(StrictModel):
     action: Literal['pause', 'resume', 'retire']
 

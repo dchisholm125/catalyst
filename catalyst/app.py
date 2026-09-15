@@ -48,7 +48,7 @@ def create_app(settings: Settings | None = None):
         initialize(settings.database)
         yield
 
-    app = FastAPI(title="Catalyst", version="0.6.0", lifespan=lifespan,
+    app = FastAPI(title="Catalyst", version="0.7.0", lifespan=lifespan,
                   description="Human-directed living ideas. Consumer subscription integrations are not connected.")
     app.state.settings = settings
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=list(settings.allowed_hosts))
@@ -156,7 +156,7 @@ def create_app(settings: Settings | None = None):
     def health():
         with connect(settings.database) as con:
             con.execute("SELECT 1").fetchone()
-        return {"status": "ok", "version": "0.6.0", "provider_connected": False,
+        return {"status": "ok", "version": "0.7.0", "provider_connected": False,
                 "local_api_adapters": ['openai', 'anthropic']}
 
     @app.get("/", response_class=HTMLResponse)
@@ -388,4 +388,6 @@ def create_app(settings: Settings | None = None):
     install_intake(app, settings, page, human, reviewer, owner, agent)
     from .connection_routes import install as install_connections
     install_connections(app, settings, page, human, agent)
+    from .local_work_routes import install as install_local_work
+    install_local_work(app, settings, page, human)
     return app

@@ -19,6 +19,8 @@
     set('model', live.worker.runtime === 'simulation' ? 'Simulation only · no model inference' : live.worker.model_label ?
       `Worker-reported model: ${live.worker.model_label} · not independently verified` : 'Model connection: not reported');
     set('queue', `${live.queued} queued instructions · ${live.budget.claimed_today} / ${live.budget.effective_daily_jobs} task starts today`);
+    const local = panel.querySelector('[data-live="local-work"]');
+    if (local) local.replaceChildren(...(live.local_work ? [element('a', live.local_work.status === 'staged' ? 'Review local draft' : 'Open local brief', `/local-work?packet_id=${encodeURIComponent(live.local_work.id)}`), element('p', 'Activity in your own tool is unknown')] : []));
     const assignment = panel.querySelector('[data-live="assignment"]');
     const task = live.task;
     set('elapsed', task?.elapsed_seconds == null ? '' : `${task.elapsed_seconds}s since assignment · elapsed time is not a completion estimate`);
@@ -66,7 +68,8 @@
       if (total) {
         const working = result.agents.filter(a => a.state === 'working').length;
         const waiting = result.agents.filter(a => a.state === 'waiting' || a.state === 'blocked').length;
-        total.textContent = `${result.agents.length} agents · ${working} working · ${waiting} waiting · ${result.agents.length-working-waiting} paused, stopped, or disconnected`;
+        const local = result.agents.filter(a => a.state === 'local-prepared' || a.state === 'local-review').length;
+        total.textContent = `${result.agents.length} agents · ${working} working · ${waiting} waiting · ${local} local briefs or drafts · ${result.agents.length-working-waiting-local} paused, stopped, or disconnected`;
       }
       if (result.agents.length) document.querySelectorAll('[data-shared-budget]').forEach(node => {
         const budget = result.agents[0].budget;

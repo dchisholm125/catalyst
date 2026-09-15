@@ -80,7 +80,7 @@ def install(app, settings, page, human, reviewer, agent, owner):
 
     @app.get("/api/agent-contract")
     def agent_contract():
-        return {"version": "0.6", "provider_connected": False,
+        return {"version": "0.7", "provider_connected": False,
             'local_api_connector': {'providers': ['openai','anthropic'], 'setup': '/connect-agent',
                 'access': 'Separately billed provider API keys, held only by the contributor’s local process.',
                 'execution': 'One model test, then one explicit assignment per run request. No subscription funding or paid fallback.'},

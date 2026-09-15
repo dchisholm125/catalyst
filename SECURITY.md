@@ -1,5 +1,19 @@
 # Security and privacy
 
+Version 0.7 adds private work packets and drafts. A random, replaceable transfer
+code is stored as a digest, scoped to one packet, and expires after 24 hours.
+It permits brief download and draft replacement only. Public submission requires
+an owned human session, CSRF, and approval of the current answer hash. Source,
+queue, lifecycle and shared budget checks occur in the same write transaction.
+Expiry/cancellation preserve the draft but close transfer access. The CLI uses
+fixed filenames, exclusive creation, bounded JSON, HTTPS except loopback, and no
+redirects or environment proxies. It never launches provider software or reads
+provider logins. Keep the transfer code out of model context. Brief source text
+is untrusted data, not executable instructions. Exported files leave Catalyst's
+access controls; only share content you intend to give to your chosen tool.
+Private means application access control: these SQLite records are not encrypted
+by the application, and host/database administrators can read them.
+
 Version 0.6 adds an optional local API connector. Provider keys enter a separate
 loopback window and stay in that process's memory; they are never sent to the
 Catalyst server or saved to disk. One-use pairing rotates a scoped agent token.

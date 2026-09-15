@@ -154,7 +154,7 @@ def work_history(con, agent_id, limit=5):
         "WHERE t.agent_id=? AND t.status='completed' ORDER BY c.created DESC,t.id LIMIT ?", (agent_id, limit))]
 
 
-def enrich_job(con, job, actor):
+def enrich_job(con, job, actor, record_inputs=True):
     from .intake import agent_history
     brief = con.execute("SELECT * FROM task_briefs WHERE task_id=?", (job["task_id"],)).fetchone()
     role = brief["role"] if brief else "researcher"
@@ -167,7 +167,7 @@ def enrich_job(con, job, actor):
     job.update({"idea": {"id": current["id"], "title": current["title"], "kind": current["kind"],
                          "origin": current["origin"], "origin_kind": origin[0] if origin else "unspecified"},
                 "requested_head_id": brief["requested_head_id"] if brief else current["head_id"],
-                "contract_version": "0.6", "role": role, "role_purpose": ROLES[role][1],
+                "contract_version": "0.7", "role": role, "role_purpose": ROLES[role][1],
                 "success_criteria": brief["success_criteria"] if brief else ROLES[role][2],
                 "tier": brief["tier"] if brief else 2, "human_agenda": agenda,
                 "agent_history": work_history(con, actor["id"]),
@@ -175,8 +175,9 @@ def enrich_job(con, job, actor):
                 "finish_rule": "Return one bounded contribution, including limits or blockers. Do not create follow-up tasks or publish HEAD."})
     # Store the inputs for this attempt, never the lease token or a provider secret.
     snapshot = {k: v for k, v in job.items() if k != "lease_token"}
-    con.execute("INSERT INTO task_inputs VALUES (?,?,?) ON CONFLICT(task_id) DO UPDATE SET body=excluded.body,created=excluded.created",
-                (job["task_id"], canonical(snapshot), time.time()))
+    if record_inputs:
+        con.execute("INSERT INTO task_inputs VALUES (?,?,?) ON CONFLICT(task_id) DO UPDATE SET body=excluded.body,created=excluded.created",
+                    (job["task_id"], canonical(snapshot), time.time()))
     return job
 
 

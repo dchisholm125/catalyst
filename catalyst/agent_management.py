@@ -23,6 +23,7 @@ def event(con, agent_id, name, body):
 
 
 def release(con, agent_id):
+    con.execute("UPDATE local_work_packets SET status='cancelled',transfer_digest=NULL WHERE agent_id=? AND status IN ('prepared','staged')", (agent_id,))
     con.execute("UPDATE tasks SET status='queued',agent_id=NULL,lease_digest=NULL,lease_until=NULL "
                 "WHERE status='leased' AND agent_id=?", (agent_id,))
     con.execute("UPDATE model_connections SET command_state='cancelled',message='Agent settings or permission changed; request a new run.' WHERE agent_id=? AND command_state IN ('requested','running')", (agent_id,))
@@ -233,6 +234,7 @@ def export_record(con, agent_id, owner):
             'agent': identity, 'configuration_history': events,
             'queue': [{k: v for k, v in item.items() if k not in ('request_key', 'request_hash')} for item in queue_items(con, agent_id)],
             'contributions': [dict(r) for r in con.execute('SELECT * FROM contributions WHERE actor_id=? ORDER BY created,id', (agent_id,))],
+            'local_work_receipts': [dict(r) for r in con.execute("SELECT id,task_id,input_hash,answer_hash,result_id,approved_by,approved_at FROM local_work_packets WHERE agent_id=? AND status='submitted' ORDER BY approved_at,id", (agent_id,))],
             'questions_to_humans': [dict(r) for r in con.execute('SELECT id,title,body,human_input,context_idea_id,topic_id,status,idea_id,created FROM agent_questions WHERE agent_id=? ORDER BY created,id', (agent_id,))],
             'drafts': [dict(r) for r in con.execute('SELECT * FROM revisions WHERE author_id=? ORDER BY created,id', (agent_id,))],
             'completed_work': [dict(r) for r in con.execute("SELECT t.id,t.idea_id,t.question,t.result_id,t.created,b.role,"

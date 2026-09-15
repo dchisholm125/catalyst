@@ -60,10 +60,20 @@ def main():
     owner.add_argument('name')
     connector = commands.add_parser('connect', help='Open a local model-connection window; provider keys stay on this machine')
     connector.add_argument('--server', default='http://127.0.0.1:8000')
+    work = commands.add_parser('work', help='Pull a JSON brief or push a private draft; never calls a model')
+    actions = work.add_subparsers(dest='work_action', required=True)
+    pull = actions.add_parser('pull'); pull.add_argument('--out', required=True)
+    push = actions.add_parser('push'); push.add_argument('answer')
+    for action in (pull, push):
+        action.add_argument('--server', default='http://127.0.0.1:8000')
     agent = commands.add_parser("agent"); agent.add_argument("name"); agent.add_argument("--owner", required=True)
     revoke = commands.add_parser("revoke"); revoke.add_argument("name")
     commands.add_parser("feedback")
     args = parser.parse_args()
+    if args.command == 'work':
+        from .work_files import main as work_files
+        work_files(args)
+        return
     if args.command == 'connect':
         from .local_connector import main as connect_model
         connect_model(args.server)

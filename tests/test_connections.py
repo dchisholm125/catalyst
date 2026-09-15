@@ -269,7 +269,7 @@ def test_v5_upgrade_preserves_owner_and_invents_no_model_connection(site):
     with connect(path,True) as con:
         for table in ('connection_pairings','model_connections','connection_run_receipts'): con.execute(f'DROP TABLE {table}')
         con.execute('UPDATE schema_version SET version=5')
-    backup=upgrade(path); assert backup and 'pre-v6' in backup.name
+    backup=upgrade(path); assert backup and 'pre-v7' in backup.name
     assert upgrade(path) is None
     assert owner.get('/api/me').json()['role']=='owner'
     assert status(owner,aid)['state']=='not-connected'

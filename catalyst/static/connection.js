@@ -40,6 +40,7 @@
     $('#subscription-policy').textContent = openai ? 'OpenAI’s Pro guidance prohibits using ChatGPT to power third-party services. Codex sign-in support does not establish permission for Catalyst’s automatic queue.' : 'Anthropic directs third-party applications to API authentication and does not permit routing their requests through users’ Claude consumer-plan credentials.';
     $('#subscription-policy-link').href = openai ? 'https://help.openai.com/en/articles/9793128-about-chatgpt-pro-tiers' : 'https://code.claude.com/docs/en/legal-and-compliance';
     $('#prepare-connection').disabled = !apiAccess || !providerForm.api_billing_accepted.checked;
+    $('#subscription-local-work').href = aid ? `/local-work?agent_id=${encodeURIComponent(aid)}` : '/local-work';
   }
   providerForm.addEventListener('change', accessChanged);
   async function prepare() {

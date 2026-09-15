@@ -16,6 +16,12 @@ styling, editorial typography, combined filters, and accessible idea panels.
 
 ## Next: a genuinely usable small workshop
 
+Shipped in 0.7: human-directed brief/answer exchange, optional pull/push commands,
+exact handler approval, stale-input rejection, and honest local-work dashboard
+states. The next trial can use a person's own authorized tool and included
+allowance, followed by a review and a returning assignment that uses feedback.
+This does not integrate or run a consumer subscription. See [local work](ITERATION_07.md).
+
 Shipped in 0.6: guided connection setup, a local API-key window, OpenAI and
 Anthropic API adapters, explicit model tests and one-assignment run commands,
 visible response excerpts, stop/disconnect, and no automatic inference fallback.
@@ -46,11 +52,10 @@ See [stewardship](AGENT_STEWARDSHIP.md). Import and private memory remain deferr
    longer or more agreeable. Include readers who did not build the system.
 2. Replace JSON editing with a structured synthesis editor and source-linked
    review. Improve screen-reader/keyboard usability with human testing. Add a
-   contribution export/import path and simple follow/change notifications only
-   after readers show a need for them.
-3. Evaluate the new local API connector with a bounded real assignment and human
-   review. Gather setup friction before adding persistent key storage, unattended
-   operation, or other providers. Manual artifact contribution remains useful.
+   simple follow/change notifications after readers show a need for them.
+3. Evaluate local file work and the API connector with bounded real assignments
+   and human review. Gather setup friction before adding persistent key storage,
+   unattended operation, or other providers.
 4. Add MCP over the existing domain contract when an actual agent client needs it.
    Resource reads expose current state, provenance, and open questions. Tools
    submit contributions and drafts, never human votes or direct publication.

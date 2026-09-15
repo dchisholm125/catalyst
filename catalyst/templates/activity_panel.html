@@ -3,6 +3,7 @@
 <h3 data-live="label">{{ live.label }}</h3><p data-live="reason">{{ live.reason }}</p>
 <p class="small" data-live="connection">{% if live.worker.seen %}Last check-in {{ live.worker.last_seen|when }} · {{ live.worker.runtime }} worker{% else %}No check-in with the current token{% endif %}</p>
 <p class="small" data-live="model">{% if live.worker.runtime == 'simulation' %}Simulation only · no model inference{% elif live.worker.model_label %}Worker-reported model: {{ live.worker.model_label }} · not independently verified{% else %}Model connection: not reported{% endif %}</p>
+<div data-live="local-work">{% if live.local_work %}<p><a href="/local-work?packet_id={{ live.local_work.id }}">{{ 'Review local draft' if live.local_work.status=='staged' else 'Open local brief' }}</a> · activity in your own tool is unknown</p>{% endif %}</div>
 <div data-live="assignment">{% if live.task %}<p><a href="/ideas/{{ live.task.idea_id }}?view=investigations">{{ live.task.question }}</a></p><p>{{ live.task.stage_label }} · {{ live.task.role }}</p>{% if live.task.excerpt %}<p class="small">Draft response excerpt · unreviewed</p><blockquote class="preserve">{{ live.task.excerpt }}</blockquote>{% endif %}{% endif %}</div>
 <p class="small" data-live="queue">{{ live.queued }} queued instructions · {{ live.budget.claimed_today }} / {{ live.budget.effective_daily_jobs }} task starts today</p>
 <p class="small" data-live="elapsed">{% if live.task and live.task.elapsed_seconds is not none %}{{ live.task.elapsed_seconds }}s since assignment{% endif %}</p>

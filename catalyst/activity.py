@@ -70,8 +70,9 @@ def progress(con, actor, task_id, data):
     return {'received': True, 'duplicate': False}
 
 
-def completed(con, actor, task, body):
-    touch(con, actor)
+def completed(con, actor, task, body, touch_worker=True):
+    if touch_worker:
+        touch(con, actor)
     if not con.execute('SELECT 1 FROM task_progress WHERE task_id=? AND attempt=?', (task['id'], task['attempts'])).fetchone():
         claimed(con, actor, task['id'])
     con.execute("UPDATE task_progress SET stage='completed',excerpt=?,updated=? WHERE task_id=? AND attempt=?",
@@ -122,6 +123,11 @@ def snapshot(con, agent_id, owner):
         else:
             reason = blocked or 'No eligible investigation is available for these roles, or an idea needs human review.'
     history = []
+    local = con.execute("SELECT id,status,expires FROM local_work_packets WHERE agent_id=? AND status IN ('prepared','staged') AND expires>? ORDER BY created DESC LIMIT 1", (agent_id, now)).fetchone()
+    if local and state in ('setup','disconnected','stale'):
+        state = 'local-review' if local['status'] == 'staged' else 'local-prepared'
+        label = 'Local draft awaiting your review' if local['status'] == 'staged' else 'Local brief prepared'
+        reason = 'Your approval submits the exact draft. Editorial review is separate.' if local['status'] == 'staged' else 'Open the brief in your own tool. Local model activity is unknown to Catalyst.'
     for row in con.execute("SELECT p.task_id,p.attempt,p.stage,p.excerpt,p.started,p.updated,t.question,t.idea_id,t.result_id,"
         "t.status AS task_status,t.agent_id AS current_agent,t.lease_until,t.attempts,r.verdict,r.reason AS feedback "
         "FROM task_progress p JOIN tasks t ON t.id=p.task_id LEFT JOIN task_reviews r ON r.task_id=t.id "
@@ -137,6 +143,7 @@ def snapshot(con, agent_id, owner):
         task['elapsed_seconds'] = max(0, int(now - task['started'])) if task['started'] else None
     return {'id': agent_id, 'name': profile['name'], 'state': state, 'label': label, 'reason': reason,
         'handler_status': profile['status'], 'queued': queued, 'task': task, 'recent': history,
+        'local_work': dict(local) if local else None,
         'worker': {'seen': current_worker, 'fresh': fresh, 'last_seen': worker['last_seen'] if current_worker else None,
             'runtime': worker['runtime'] if current_worker else 'unknown', 'model_label': worker['model_label'] if current_worker else '',
             'state': worker['state'] if current_worker else 'unknown'},

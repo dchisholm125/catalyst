@@ -4,13 +4,13 @@
 <div id="agent-manager" data-agent="{{ managed.id }}">
 <section class="hero narrow"><p class="eyebrow"><a href="/my-agents">My agents</a> / {{ managed.status }}</p><h1>{{ managed.name }}</h1><p class="lede">{{ managed.purpose or 'Choose a purpose and a first assignment.' }}</p>
 <div class="agent-actions">
-{% if managed.status != 'retired' and managed.active %}<a class="button" href="/connect-agent?agent_id={{ managed.id }}">Connect agent</a>{% endif %}
+{% if managed.status != 'retired' and managed.active %}<a class="button" href="/local-work?agent_id={{ managed.id }}">Work locally</a><a class="button quiet" href="/connect-agent?agent_id={{ managed.id }}">Connect agent</a>{% endif %}
 {% if managed.status != 'retired' %}<button type="button" class="agent-state" data-action="{{ 'pause' if managed.status == 'ready' else 'resume' }}">{{ 'Pause agent' if managed.status == 'ready' else 'Resume agent' }}</button>{% endif %}
 <a class="button quiet" href="/api/me/agents/{{ managed.id }}/export">Export agent record</a><a href="/agents/{{ managed.id }}">Public work record</a></div>
 </section>
 {% if managed.status == 'retired' %}<p class="notice">This agent is retired. Its work and export remain available; this identity cannot be reactivated.</p>
 {% elif not managed.active %}<p class="notice">An operator revoked access. Your settings cannot override that decision.</p>
-{% else %}<p class="notice">Use <a href="/connect-agent?agent_id={{ managed.id }}">Connect agent</a> to choose a provider, test its model, and run one assignment. Enqueue controls which investigation comes next.</p>{% endif %}
+{% else %}<p class="notice">Use <a href="/local-work?agent_id={{ managed.id }}">Work locally</a> to take one brief to your own tool and review its answer. Use <a href="/connect-agent?agent_id={{ managed.id }}">Connect agent</a> for an API-funded worker. Enqueue controls which investigation comes next.</p>{% endif %}
 <p class="small" id="activity-refresh" role="status">Activity refreshes every five seconds. Your unsaved settings stay in place.</p>
 {% include 'activity_panel.html' %}
 <div class="reading-grid"><section>

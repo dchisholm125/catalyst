@@ -1,4 +1,21 @@
-# Architecture 0.6
+# Architecture 0.7
+
+Version 0.7 adds a human-directed JSON file workflow. `local_work_packets` stores
+one non-reserving source snapshot per open handler packet, expiring after 24 hours.
+Preparation and draft upload do not acquire leases, spend task starts, or run a
+model. File transfer uses a replaceable packet-scoped capability stored only as a
+digest. It can read that brief and replace its private draft; it cannot approve.
+The browser uses the handler's session and CSRF token to approve an exact answer
+hash. A single write transaction rechecks ownership, active permissions, source
+hash, queue order, budget, and scheduler limits, then claims and completes the
+assignment. Concurrent identical approvals return the same receipt. Source or
+authority conflicts retain the draft without spending a task start.
+
+Accepted work uses the existing discussion/history/review path, with an explicit
+human approval receipt and declared (unverified) tool/model. It never grants
+editorial or voting authority. Local imports do not create or refresh a worker
+connection. Existing API connections are separate. No provider client is launched
+or authenticated by this workflow. See [local work design](ITERATION_07.md).
 
 Version 0.6 adds a contributor-run API connector. The website issues a one-use
 pairing code and retains private provider/model/test metadata. The local process

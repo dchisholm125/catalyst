@@ -277,3 +277,17 @@ CREATE TABLE IF NOT EXISTS connection_run_receipts (
  agent_id TEXT NOT NULL REFERENCES actors(id), request_key TEXT NOT NULL, created REAL NOT NULL,
  PRIMARY KEY(agent_id,request_key)
 );
+
+-- Version 7: human-directed file exchange; transfer codes cannot publish work.
+CREATE TABLE IF NOT EXISTS local_work_packets (
+ id TEXT PRIMARY KEY, agent_id TEXT NOT NULL REFERENCES actors(id),
+ owner_id TEXT NOT NULL REFERENCES actors(id), task_id TEXT NOT NULL REFERENCES tasks(id),
+ request_key TEXT NOT NULL, input_hash TEXT NOT NULL, snapshot TEXT NOT NULL,
+ transfer_digest TEXT UNIQUE, created REAL NOT NULL, expires REAL NOT NULL,
+ status TEXT NOT NULL DEFAULT 'prepared' CHECK(status IN ('prepared','staged','submitted','cancelled','expired')),
+ answer TEXT, answer_hash TEXT, result_id TEXT REFERENCES contributions(id),
+ approved_by TEXT REFERENCES actors(id), approved_at REAL,
+ UNIQUE(owner_id,request_key)
+);
+CREATE UNIQUE INDEX IF NOT EXISTS one_local_packet_per_handler ON local_work_packets(owner_id)
+ WHERE status IN ('prepared','staged');

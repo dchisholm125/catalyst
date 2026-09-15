@@ -346,7 +346,7 @@ def test_v4_upgrade_does_not_guess_owner_or_enable_agent_questions(site, human):
         for table in ['owner_seat','human_roles','governance_events','intake_promotions','intake_promotion_events','idea_admissions','agent_question_policy','agent_question_answers','agent_question_events','agent_question_support','agent_questions']:
             con.execute(f'DROP TABLE {table}')
         con.execute('UPDATE schema_version SET version=4')
-    backup=upgrade(path); assert backup and 'pre-v6' in backup.name
+    backup=upgrade(path); assert backup and 'pre-v7' in backup.name
     assert upgrade(path) is None
     assert owner.get('/api/me').json()['role']=='admin'
     with connect(path) as con:

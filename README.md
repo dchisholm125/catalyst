@@ -4,9 +4,33 @@
 
 Humans and AI develop **Reflections**, **Catalysts**, and **Claims** together. The idea is the lasting object; conversation is how it develops. Preserve the origin, challenge the assumptions, and develop the next version.
 
-**Status: runnable local alpha, not a deployed public service.** Optional local connectors use OpenAI or Anthropic API access with separate billing and explicit activation. No consumer subscription usage is collected, pooled, or spent. A no-inference simulation remains available.
+**Status: runnable local alpha, not a deployed public service.** Contribute a human-reviewed answer from your own tools using file exchange, or explicitly connect a separately billed OpenAI/Anthropic API worker. Catalyst does not collect or operate consumer subscription access. A no-inference simulation remains available.
 
-## New in 0.6
+## New in 0.7
+
+**My agents → Work locally** prepares one JSON brief using your agent's queue,
+role, current source material, and previous feedback. Download it, work in your
+own authorized tool, and upload the completed answer template. Your signed-in
+approval submits the exact draft with handler and declared tool/model provenance.
+The agent's identity and history persist across tools and sessions.
+
+Optional `catalyst work pull` and `catalyst work push` commands handle the files.
+They contact only your chosen Catalyst server. Push stages a private draft;
+neither command launches a model, reads provider credentials, or publishes work.
+The guide includes personal ChatGPT/Codex and Claude/Claude Code paths with links
+to provider guidance. File exchange does not confer provider permission or turn
+a consumer subscription into a background service.
+
+Briefs expire after 24 hours and do not reserve tasks. Changed source material,
+queue conditions, or permissions can require a fresh brief; the draft is retained.
+An accepted import counts against the shared task budget and review limits.
+The dashboard distinguishes a prepared brief from a draft awaiting your approval;
+activity in an external AI tool remains unknown.
+
+See [the step-by-step local work guide](docs/ITERATION_07.md) and
+[provider boundaries](docs/PROVIDERS.md). The API connector remains available.
+
+## Previously in 0.6
 
 **Connect agent** guides an existing or new agent through roles, provider choice,
 API access, local pairing, a model test, and one explicitly requested assignment.
@@ -108,11 +132,11 @@ python scripts/upgrade.py &&
 python -m uvicorn catalyst.app:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
-The script backs up a v1–v5 database before its additive v6 upgrade. No database
-reset is needed. HTTPX is now an application dependency. Existing agent identities,
+The script backs up a v1–v6 database before its additive v7 upgrade. No database
+reset is needed. Existing agent identities,
 credentials, and the Owner seat are preserved. Installations predating 0.5 without
 an Owner should run `catalyst owner "Your name"` once for an existing human account.
-It cannot replace an occupied seat. See [current upgrade notes](docs/ITERATION_06.md#upgrade),
+It cannot replace an occupied seat. See [current upgrade notes](docs/ITERATION_07.md#upgrade),
 [agent work contract](docs/AGENT_WORK.md), and [verification](docs/VERIFICATION.md).
 
 ## Run locally
@@ -159,7 +183,7 @@ The default publication cadence is 60 seconds. In an isolated development enviro
 
 ## Contributor capacity: truthful controls first
 
-The slider at `/contribute` allocates a percentage of a **self-defined daily task-start budget**, not a percentage of a ChatGPT or Claude plan. With a budget of 8 and a share of 25%, Catalyst permits at most 2 task starts per UTC day. Attempts count even when work fails. One task can be in flight per contributor. Contributions do not buy votes.
+The slider at `/contribute` allocates a percentage of a **self-defined daily task-start budget**, not a percentage of a ChatGPT or Claude plan. With a budget of 8 and a share of 25%, Catalyst permits at most 2 task starts per UTC day. Worker attempts count even when work fails; local file work counts once at accepted submission, since Catalyst cannot observe offline attempts. One task can be in flight per contributor. Contributions do not buy votes.
 
 Provider quota is displayed as **unknown**. Subscription adapters, quota metering, local model runtimes, and an MCP interface remain roadmap work. Only the connector's separate local window accepts API keys; the Catalyst website never does. Never provide consumer passwords, OAuth tokens, or session cookies. See [provider constraints](docs/PROVIDERS.md).
 
@@ -192,6 +216,7 @@ for local administration; it preserves its legacy ready-by-default behavior.
 | `catalyst/agent_management.py`, `catalyst/agent_routes.py` | Agent lifecycle, private personal queues, and export |
 | `catalyst/connections.py`, `catalyst/connection_routes.py` | Private pairing, model-test records, explicit run commands |
 | `catalyst/local_connector.py`, `catalyst/providers.py` | Local key window and bounded OpenAI/Anthropic API worker |
+| `catalyst/local_work.py`, `catalyst/local_work_routes.py`, `catalyst/work_files.py` | Private work briefs, file transfer, and exact handler approval |
 | `catalyst/governance.py`, `catalyst/intake.py`, `catalyst/intake_routes.py` | Owner seat, permissions, public intake, and agent-question limits |
 | `catalyst/models.py` | Validated contribution and synthesis contracts |
 | `catalyst/templates/`, `catalyst/static/` | Human interface |
