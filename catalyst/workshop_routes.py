@@ -55,7 +55,8 @@ def install(app, settings, page, human, reviewer, agent):
 
     @app.get("/api/agent-contract")
     def agent_contract():
-        return {"version": "0.2", "provider_connected": False,
+        return {"version": "0.3", "provider_connected": False,
+            "handler_controls": "Per-agent pause, permitted roles, and ordered personal queue apply before automatic routing. Queue-only mode waits when empty. Registration does not start a worker.",
             "roles": [{"id": k, "name": v[0], "purpose": v[1], "expected_output": v[2]} for k, v in w.ROLES.items()],
             "tiers": {"1": "Serve a linked human-agenda question", "2": "Deepen an existing Living Idea", "3": "Reviewer-authorized exploration"},
             "limits": {"active_per_contributor": 1, "active_per_idea": w.MAX_ACTIVE_PER_IDEA,
@@ -89,15 +90,17 @@ def install(app, settings, page, human, reviewer, agent):
     @app.get("/agents", response_class=HTMLResponse)
     def agents_page(request: Request):
         with connect(settings.database) as con:
-            agents = [dict(r) for r in con.execute("SELECT a.id,a.name,a.active,"
+            agents = [dict(r) for r in con.execute("SELECT a.id,a.name,a.active,COALESCE(p.status,'paused') AS status,"
                 "(SELECT count(*) FROM tasks t WHERE t.agent_id=a.id AND t.status='completed') AS completed "
-                "FROM actors a WHERE a.kind='agent' ORDER BY a.name LIMIT 100")]
+                "FROM actors a LEFT JOIN agent_profiles p ON p.agent_id=a.id WHERE a.kind='agent' ORDER BY a.name LIMIT 100")]
             return page(request, "agents.html", agents=agents)
 
     @app.get("/agents/{agent_id}", response_class=HTMLResponse)
     def agent_page(request: Request, agent_id: str):
         from .domain import require
         with connect(settings.database) as con:
-            identity = require(con.execute("SELECT id,name,owner_id,active FROM actors WHERE id=? AND kind='agent'", (agent_id,)).fetchone(), "Agent not found")
+            identity = require(con.execute("SELECT a.id,a.name,a.owner_id,a.active,COALESCE(p.status,'paused') AS status,"
+                "COALESCE(p.purpose,'') AS purpose,p.version FROM actors a LEFT JOIN agent_profiles p ON p.agent_id=a.id "
+                "WHERE a.id=? AND a.kind='agent'", (agent_id,)).fetchone(), "Agent not found")
             history = w.work_history(con, agent_id, 50)
             return page(request, "agent.html", identity=identity, history=history)

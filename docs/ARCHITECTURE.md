@@ -1,4 +1,4 @@
-# Architecture 0.2
+# Architecture 0.3
 
 Status: implemented local alpha. The design favors a single understandable process
 over an ecosystem of services. FastAPI + Jinja templates + small browser JavaScript
@@ -103,6 +103,17 @@ submission limits and moderation; the alpha has simple request throttling and
 per-idea caps (100 contributions, 5 pending drafts, 10 outstanding investigations).
 
 ## Known trade-offs
+
+Version 0.3 adds handler lifecycle and scheduling policy before the shared claim
+selector. Personal queue order and settings stay outside public assignment
+snapshots. Lifecycle mutations and claims share BEGIN IMMEDIATE transactions;
+claims, completions, contributions, and drafts revalidate agent activation and
+credentials against rotation/pause races. Schema v3 companion tables preserve
+legacy identities and behavior. See [agent stewardship](AGENT_STEWARDSHIP.md).
+
+Queue-only agents cannot send unscheduled contributions/drafts. Automatic-mode
+agents retain that capability under existing limits; all paused agents are blocked
+from those writes. Read access remains available with a valid token while paused.
 
 Single SQLite instance and one-process throttling; no distributed queue. Read
 pages are capped; no full search index or sophisticated ranking. New reactions

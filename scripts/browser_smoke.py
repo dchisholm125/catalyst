@@ -143,13 +143,17 @@ def main():
                     page.get_by_role("link", name="Smoke-test challenger", exact=True).click()
                     assert "Handler reviewed their own agent" in page.inner_text("main")
                     assert "SIMULATION ONLY" in page.inner_text("main")
+                    from agent_browser_smoke import check_my_agents
+                    check_my_agents(page, base, ROOT, env, args.screenshots)
                     assert errors == [], errors
                     report = {"status": "passed", "browser": browser.version, "javascript_errors": errors,
                         "checks": ["native invitation login", "distinct type colors and serif headings", "type filtering",
                                    "single visible panel", "tab keyboard navigation", "Back history and unsent form preservation",
                                    "reduced motion", "no-JavaScript deep links", "20 topics and six roles",
                                    "390px layout without page overflow", "human question and support", "reviewer development",
-                                   "role-specific task creation", "budget controls", "mock worker round-trip", "review and agent history"]}
+                                   "role-specific task creation", "budget controls", "mock worker round-trip", "review and agent history",
+                                   "agent registration and pause/resume", "idea typeahead and topic queue", "queue-only routing",
+                                   "portable export", "credential rotation", "agent retirement"]}
                     print(json.dumps(report, indent=2))
                     browser.close()
             finally:

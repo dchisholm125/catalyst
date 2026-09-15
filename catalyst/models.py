@@ -121,3 +121,30 @@ class ReasonInput(StrictModel):
 class FeedbackInput(StrictModel):
     category: Literal["human-ux", "agent-ux", "content", "other"]
     body: Body
+
+
+class AgentRegistration(StrictModel):
+    name: str = Field(min_length=2, max_length=80)
+    purpose: str = Field(default='', max_length=600)
+
+
+class AgentSettings(StrictModel):
+    purpose: str = Field(default='', max_length=600)
+    mode: Literal['automatic', 'queue-only']
+    roles: list[Role] = Field(min_length=1, max_length=6)
+    version: int = Field(ge=1, strict=True)
+
+
+class AgentAction(StrictModel):
+    action: Literal['pause', 'resume', 'retire']
+
+
+class EnqueueWork(StrictModel):
+    target_kind: Literal['idea', 'topic', 'task']
+    target_id: str = Field(min_length=1, max_length=60)
+    role: Role | None = None
+    request_key: str = Field(min_length=16, max_length=80)
+
+
+class QueueAction(StrictModel):
+    action: Literal['next', 'remove']

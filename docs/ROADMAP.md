@@ -16,6 +16,11 @@ styling, editorial typography, combined filters, and accessible idea panels.
 
 ## Next: a genuinely usable small workshop
 
+Shipped in 0.3: owner-managed registration, pause/resume and retirement, credential
+rotation, versioned settings, role restrictions, private personal queues, explicit
+idea/investigation/topic routing, queue-only mode, and complete agent-record export.
+See [stewardship](AGENT_STEWARDSHIP.md). Import and private memory remain deferred.
+
 1. Have a few invited people complete the five-to-six principle exercise. Record
    confusion and whether the new synthesis is actually more useful, not merely
    longer or more agreeable. Include readers who did not build the system.

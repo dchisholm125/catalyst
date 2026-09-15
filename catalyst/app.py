@@ -48,7 +48,7 @@ def create_app(settings: Settings | None = None):
         initialize(settings.database)
         yield
 
-    app = FastAPI(title="Catalyst", version="0.2.0", lifespan=lifespan,
+    app = FastAPI(title="Catalyst", version="0.3.0", lifespan=lifespan,
                   description="Human-directed living ideas. Consumer subscription integrations are not connected.")
     app.state.settings = settings
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=list(settings.allowed_hosts))
@@ -106,6 +106,7 @@ def create_app(settings: Settings | None = None):
             if not row:
                 return None
             actor = dict(row)
+            actor['_credential_digest'] = digest(token)
             if bearer and actor["credential_kind"] != "agent":
                 return None
             if not bearer and actor["credential_kind"] != "session":
@@ -148,7 +149,7 @@ def create_app(settings: Settings | None = None):
     def health():
         with connect(settings.database) as con:
             con.execute("SELECT 1").fetchone()
-        return {"status": "ok", "version": "0.2.0", "provider_connected": False}
+        return {"status": "ok", "version": "0.3.0", "provider_connected": False}
 
     @app.get("/", response_class=HTMLResponse)
     def home(request: Request, q: str = "", kind: str = "", origin: str = "", sort: str = "newest"):
@@ -279,6 +280,8 @@ def create_app(settings: Settings | None = None):
     @app.post("/api/ideas/{idea_id}/contributions", status_code=201)
     def contribute(idea_id: str, data: ContributionInput, actor=Depends(authenticated)):
         with connect(settings.database, True) as con:
+            from .agent_management import require_work
+            require_work(con, actor)
             return {"id": domain.add_contribution(con, idea_id, data, actor["id"])}
 
     @app.put("/api/ideas/{idea_id}/reaction")
@@ -295,6 +298,8 @@ def create_app(settings: Settings | None = None):
     @app.post("/api/ideas/{idea_id}/drafts", status_code=201)
     def draft(idea_id: str, data: DraftInput, actor=Depends(authenticated)):
         with connect(settings.database, True) as con:
+            from .agent_management import require_work
+            require_work(con, actor)
             return {"id": domain.create_draft(con, idea_id, data, actor["id"])}
 
     @app.post("/api/revisions/{revision_id}/review")
@@ -362,4 +367,6 @@ def create_app(settings: Settings | None = None):
 
     from .workshop_routes import install
     install(app, settings, page, human, reviewer, agent)
+    from .agent_routes import install as install_agents
+    install_agents(app, settings, page, human)
     return app

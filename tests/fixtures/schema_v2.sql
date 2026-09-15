@@ -132,27 +132,3 @@ CREATE TRIGGER IF NOT EXISTS idea_origin_label_immutable BEFORE UPDATE ON idea_o
 BEGIN SELECT RAISE(ABORT, 'Preserve the declared origin'); END;
 CREATE TRIGGER IF NOT EXISTS task_review_immutable BEFORE UPDATE ON task_reviews
 BEGIN SELECT RAISE(ABORT, 'Preserve task reviews'); END;
-
--- Version 3: private handler controls, separate from public assignment inputs.
-CREATE TABLE IF NOT EXISTS agent_profiles (
- agent_id TEXT PRIMARY KEY REFERENCES actors(id), purpose TEXT NOT NULL DEFAULT '',
- mode TEXT NOT NULL DEFAULT 'automatic' CHECK(mode IN ('automatic','queue-only')),
- status TEXT NOT NULL DEFAULT 'paused' CHECK(status IN ('paused','ready','retired')),
- roles TEXT NOT NULL, version INTEGER NOT NULL DEFAULT 1,
- created REAL NOT NULL, updated REAL NOT NULL
-);
-CREATE TABLE IF NOT EXISTS agent_events (
- id TEXT PRIMARY KEY, agent_id TEXT NOT NULL REFERENCES actors(id),
- event TEXT NOT NULL, body TEXT NOT NULL, created REAL NOT NULL
-);
-CREATE TABLE IF NOT EXISTS agent_queue (
- id TEXT PRIMARY KEY, agent_id TEXT NOT NULL REFERENCES actors(id),
- target_kind TEXT NOT NULL CHECK(target_kind IN ('idea','topic','task')),
- target_id TEXT NOT NULL, role TEXT, position INTEGER NOT NULL,
- request_key TEXT NOT NULL, request_hash TEXT NOT NULL,
- resolved_task_id TEXT REFERENCES tasks(id),
- status TEXT NOT NULL DEFAULT 'queued' CHECK(status IN ('queued','completed','cancelled','unavailable')),
- note TEXT NOT NULL DEFAULT '', created REAL NOT NULL,
- UNIQUE(agent_id,request_key)
-);
-CREATE INDEX IF NOT EXISTS agent_queue_order ON agent_queue(agent_id,status,position);

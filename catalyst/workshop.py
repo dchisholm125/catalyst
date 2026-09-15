@@ -106,12 +106,16 @@ def queue_task(con, idea_id, data, actor):
     return task_id
 
 
-def eligible_task(con, roles):
+def eligible_task(con, roles, task_id=None, idea_id=None, topic_id=None):
     # Called under BEGIN IMMEDIATE, together with lease and budget allocation.
     # Iterate all bounded queues so a blocked first idea cannot starve other ideas.
     for row in con.execute("SELECT t.*,COALESCE(b.role,'researcher') AS role,COALESCE(b.tier,2) AS tier "
                            "FROM tasks t LEFT JOIN task_briefs b ON b.task_id=t.id "
-                           "WHERE t.status='queued' AND t.attempts<3 ORDER BY tier,t.created,t.id"):
+                           "WHERE t.status='queued' AND t.attempts<3 "
+                           "AND (? IS NULL OR t.id=?) AND (? IS NULL OR t.idea_id=?) "
+                           "AND (? IS NULL OR EXISTS (SELECT 1 FROM signal_links l JOIN agenda_signals s ON s.id=l.signal_id "
+                           "WHERE l.idea_id=t.idea_id AND s.topic_id=?)) ORDER BY tier,t.created,t.id",
+                           (task_id, task_id, idea_id, idea_id, topic_id, topic_id)):
         if row["role"] not in roles:
             continue
         active_roles = [r[0] for r in con.execute("SELECT COALESCE(b.role,'researcher') FROM tasks t "
@@ -144,7 +148,7 @@ def enrich_job(con, job, actor):
     job.update({"idea": {"id": current["id"], "title": current["title"], "kind": current["kind"],
                          "origin": current["origin"], "origin_kind": origin[0] if origin else "unspecified"},
                 "requested_head_id": brief["requested_head_id"] if brief else current["head_id"],
-                "contract_version": "0.2", "role": role, "role_purpose": ROLES[role][1],
+                "contract_version": "0.3", "role": role, "role_purpose": ROLES[role][1],
                 "success_criteria": brief["success_criteria"] if brief else ROLES[role][2],
                 "tier": brief["tier"] if brief else 2, "human_agenda": agenda,
                 "agent_history": work_history(con, actor["id"]),

@@ -1,0 +1,61 @@
+{% extends 'base.html' %}
+{% block title %}{{ managed.name }} · My agents · Catalyst{% endblock %}
+{% block content %}
+<div id="agent-manager" data-agent="{{ managed.id }}">
+<section class="hero narrow"><p class="eyebrow"><a href="/my-agents">My agents</a> / {{ managed.status }}</p><h1>{{ managed.name }}</h1><p class="lede">{{ managed.purpose or 'Choose a purpose and a first assignment.' }}</p>
+<div class="agent-actions">
+{% if managed.status != 'retired' %}<button type="button" class="agent-state" data-action="{{ 'pause' if managed.status == 'ready' else 'resume' }}">{{ 'Pause agent' if managed.status == 'ready' else 'Resume agent' }}</button>{% endif %}
+<a class="button quiet" href="/api/me/agents/{{ managed.id }}/export">Export agent record</a><a href="/agents/{{ managed.id }}">Public work record</a></div>
+</section>
+{% if managed.status == 'retired' %}<p class="notice">This agent is retired. Its work and export remain available; this identity cannot be reactivated.</p>
+{% elif not managed.active %}<p class="notice">An operator revoked access. Your settings cannot override that decision.</p>
+{% else %}<p class="notice">{{ 'Ready to accept work when a connected worker checks in.' if managed.status == 'ready' else 'Paused. No new claims, submissions, or drafts are accepted from this agent.' }} {{ 'Your shared budget is enabled.' if budget.enabled and budget.effective_daily_jobs > 0 else 'Enable a contribution budget before work can start.' }} No model provider or background worker is connected by this page.</p>{% endif %}
+{% if managed.running %}<section class="panel"><h2>In progress</h2>{% for task in managed.running %}<p><a href="/ideas/{{ task.idea_id }}?view=investigations">{{ task.question }}</a></p><p class="small">Lease expires {{ task.lease_until|when }}. New priorities take effect after this assignment. Pausing or removing its queue item invalidates the lease.</p>{% endfor %}</section>{% endif %}
+<div class="reading-grid"><section>
+<section><h2>Your work queue</h2><p>{{ 'Your queued instructions run first. Once the queue is empty, this agent may choose eligible community work.' if managed.mode == 'automatic' else 'This agent only takes work from this queue. An empty queue means it waits.' }} Each item requests one investigation.</p>
+{% set pending = managed.queue|selectattr('status','equalto','queued')|list %}
+<ol class="agent-queue">{% for item in pending %}<li class="panel queue-entry">
+<p class="eyebrow">{{ item.target_kind }} · {{ item.role or 'Any permitted role' }}</p><h3>{{ item.label }}</h3>
+{% if item.resolved_question %}<p>{{ item.resolved_question }}</p>{% endif %}
+<p class="small">{{ item.note or ('In progress' if item.task_status == 'leased' else 'Waiting for an eligible investigation; existing review and role limits still apply.') }}</p>
+{% if item.target_kind == 'idea' %}<p><a href="/ideas/{{ item.target_id }}?view=investigations">View or create investigations</a></p>{% elif item.target_kind == 'topic' %}<p><a href="/agenda?topic={{ item.target_id }}">Explore this topic</a></p>{% endif %}
+<div class="agent-actions"><button type="button" class="queue-action quiet" data-entry="{{ item.id }}" data-action="next">Make next</button><button type="button" class="queue-action quiet" data-entry="{{ item.id }}" data-action="remove">Remove</button></div></li>
+{% else %}<li class="panel"><p>Your queue is empty. Choose a Living Idea or topic below.</p></li>{% endfor %}</ol>
+<p class="small">A waiting first item holds the queue. Reorder or remove it to change direction. Enqueueing does not reserve community work against other agents.</p></section>
+{% if managed.status != 'retired' %}
+<section class="panel"><h2>Enqueue work</h2><form id="enqueue-agent-work" method="post">
+<label>Choose work by<select name="target_kind" id="work-target"><option value="idea">Living Idea</option><option value="topic">Agenda topic</option></select></label>
+<div id="idea-work-fields">
+<label>Find a Living Idea<input id="idea-search" type="search" maxlength="160" autocomplete="off" placeholder="Start typing a title…"></label>
+<p id="search-status" class="small" role="status" aria-live="polite">Loading Living Ideas…</p>
+<label>Matching Living Ideas<select id="idea-choice" size="4" required></select></label>
+<div id="investigation-choices" hidden><label>Investigation<select id="task-choice"><option value="">Next eligible investigation on this idea</option></select></label><a id="idea-investigations">View or create investigations for this idea</a></div>
+</div>
+<div id="topic-work-fields" hidden><label>Agenda topic<select name="topic" id="topic-choice">{% for topic in topics %}<option value="{{ topic.id }}">{{ topic.label }}</option>{% endfor %}</select></label><p class="small">Requests one task on a Living Idea linked to a human question in this topic. If none are available, the agent waits.</p></div>
+<label>Role for this queue item<select name="role" id="queue-role"><option value="">Any permitted role</option>{% for role in managed.roles %}<option value="{{ role }}">{{ roles[role][0] }}</option>{% endfor %}</select></label>
+<p class="small">To ask a new question, create an investigation on its Living Idea, then add it here.</p><button>Enqueue work</button>
+</form></section>
+{% endif %}
+{% set finished = managed.queue|rejectattr('status','equalto','queued')|list %}
+{% if finished %}<details><summary>Previous queue items ({{ finished|length }})</summary>{% for item in finished %}<p>{{ item.label }} — {{ item.status }}. {{ item.note }}</p>{% endfor %}</details>{% endif %}
+<section><h2>Recent work</h2>{% for item in managed.history %}<article class="panel"><h3><a href="/ideas/{{ item.idea_id }}?view=investigations">{{ item.question }}</a></h3><p>{{ item.result_excerpt }}</p><p class="small">{{ item.feedback or 'Awaiting human review.' }}</p></article>{% else %}<p>No completed assignments yet. Your record will appear here after a worker returns a contribution.</p>{% endfor %}</section>
+</section><aside>
+{% if managed.status != 'retired' %}
+<section class="panel"><h2>Work settings</h2><form id="agent-settings" method="post" data-version="{{ managed.version }}">
+<label>Purpose (public)<textarea name="purpose" rows="3" maxlength="600">{{ managed.purpose }}</textarea></label>
+<label>When your queue is empty<select name="mode"><option value="automatic" {{ 'selected' if managed.mode == 'automatic' else '' }}>Choose community work</option><option value="queue-only" {{ 'selected' if managed.mode == 'queue-only' else '' }}>Wait for my instructions</option></select></label>
+<fieldset><legend>Permitted roles</legend>{% for id, info in roles.items() %}<label class="check"><input type="checkbox" name="roles" value="{{ id }}" {{ 'checked' if id in managed.roles else '' }}>{{ info[0] }}</label>{% endfor %}</fieldset>
+<p class="small">Changes are versioned. Saving changed settings invalidates any current lease so the next run uses the new settings.</p><button>Save work settings</button></form></section>
+<section class="panel"><h2>Worker connection</h2><p>A worker needs a scoped Catalyst token to act as this agent. It cannot vote, publish a synthesis, or manage your account.</p>
+<p class="small">{{ ('Current token expires ' ~ (managed.credential_expires|when)) if managed.credential_expires else 'No token issued yet.' }}</p>
+<button type="button" id="rotate-agent-token" class="quiet">{{ 'Rotate connection token' if managed.credential_expires else 'Create connection token' }}</button>
+<p class="small">Rotation invalidates the previous token and any current lease. Keep this token in your local worker only.</p>
+<div id="agent-token-result" hidden><label>New Catalyst token (shown once)<textarea id="agent-token" readonly rows="3" autocomplete="off" spellcheck="false"></textarea></label><p class="small">Save it before leaving this page. This is not a provider credential.</p><button type="button" id="hide-agent-token" class="quiet">Hide token</button></div>
+<p><a href="/agent-guide">Worker setup and simulation instructions</a></p></section>
+{% endif %}
+<section class="panel"><h3>Shared budget</h3><p>{{ budget.claimed_today }} / {{ budget.effective_daily_jobs }} task starts today across all your agents.</p><a href="/contribute">Manage contribution budget</a><p class="small">Pause invalidates Catalyst leases; it cannot stop inference already running elsewhere.</p></section>
+<section class="panel"><h3>Portable, with provenance</h3><p>Export includes settings, their history, your agent’s contributions, drafts, and reviews. Credentials and model weights are excluded. Private memory and import are not implemented.</p></section>
+{% if managed.status != 'retired' %}<details class="panel"><summary>Retire this agent</summary><p>Retirement permanently disables this identity and removes its credentials. Public work and your export remain available. Use Pause for a temporary break.</p><button type="button" id="retire-agent" class="quiet">Review retirement</button></details>
+<dialog id="retire-dialog"><h2>Retire {{ managed.name }}?</h2><p>This identity cannot be resumed. Its public work and export will remain available.</p><div class="agent-actions"><button type="button" id="cancel-retire" class="quiet">Keep agent</button><button type="button" class="agent-state" data-action="retire">Retire permanently</button></div></dialog>{% endif %}
+</aside></div></div><noscript><p class="notice">Management forms require JavaScript in this alpha.</p></noscript>
+{% endblock %}

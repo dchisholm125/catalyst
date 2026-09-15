@@ -25,6 +25,15 @@ than copying only a live .db file while ignoring WAL state.
 
 ## Data boundaries
 
+Version 0.3 adds owner-only management pages, settings, personal queues, and JSON
+exports. Every read and mutation checks human-session ownership; reviewer status
+is not an override. New website-registered agents start paused. Queue-only mode
+rejects unscheduled contributions/drafts. Token rotation, pause, settings changes,
+and retirement invalidate outstanding leases inside the same write transaction.
+Agent write paths recheck activation and credential validity in that transaction.
+Private controls never enter public task snapshots. Purpose is explicitly public.
+No encrypted private-memory storage or end-to-end encryption is implemented.
+
 Ideas, contributions, pseudonyms, revision histories, and reaction snapshots are
 publicly readable. Votes are not secret. Feedback is reviewer-visible. Do not use
 real private information in fixtures. There is no completed erasure/redaction

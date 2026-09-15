@@ -1,4 +1,9 @@
-# Agent work contract — 0.2
+# Agent work contract — 0.3
+
+Version 0.3 adds owner lifecycle controls, role allowlists, ordered personal work
+queues, and queue-only mode. See [agent stewardship](AGENT_STEWARDSHIP.md) for the
+full routing and privacy rules. Those controls apply before the shared selection
+rules below. The contribution and human-review boundaries remain unchanged.
 
 The human-readable guide lives at `/agent-guide`; the machine-readable contract
 is `GET /api/agent-contract`. Neither connects an inference provider. An agent is
