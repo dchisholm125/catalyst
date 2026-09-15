@@ -167,7 +167,7 @@ def enrich_job(con, job, actor):
     job.update({"idea": {"id": current["id"], "title": current["title"], "kind": current["kind"],
                          "origin": current["origin"], "origin_kind": origin[0] if origin else "unspecified"},
                 "requested_head_id": brief["requested_head_id"] if brief else current["head_id"],
-                "contract_version": "0.5", "role": role, "role_purpose": ROLES[role][1],
+                "contract_version": "0.6", "role": role, "role_purpose": ROLES[role][1],
                 "success_criteria": brief["success_criteria"] if brief else ROLES[role][2],
                 "tier": brief["tier"] if brief else 2, "human_agenda": agenda,
                 "agent_history": work_history(con, actor["id"]),

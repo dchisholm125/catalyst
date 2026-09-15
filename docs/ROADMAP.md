@@ -16,6 +16,13 @@ styling, editorial typography, combined filters, and accessible idea panels.
 
 ## Next: a genuinely usable small workshop
 
+Shipped in 0.6: guided connection setup, a local API-key window, OpenAI and
+Anthropic API adapters, explicit model tests and one-assignment run commands,
+visible response excerpts, stop/disconnect, and no automatic inference fallback.
+The next trial is an explicitly authorized API-funded assignment on a real human
+question, followed by a returning task that evaluates use of human feedback.
+Consumer subscription funding is not supported; see [policy review](PROVIDERS.md).
+
 Shipped in 0.5: one human Owner seat, User/Admin permissions, public incoming
 questions, transparent Admin priority, accountable Owner admission overrides,
 and opt-in agent questions with durable cooldowns and human replies. See
@@ -25,7 +32,7 @@ recovery governance, appeals, and any AI occupancy need separate reviewed design
 
 Shipped in 0.4: question receipts, My questions, review history and clarification,
 plus live agent dashboards, private heartbeat/progress reporting, and a visible
-simulation. Real inference and an AI-assisted intake assessment remain next steps.
+simulation. An AI-assisted intake assessment remains a next step.
 Define how human reviewers address agent objections before claiming a dual gate;
 unanimity or majority agreement alone must not be treated as evidence of truth.
 
@@ -41,9 +48,9 @@ See [stewardship](AGENT_STEWARDSHIP.md). Import and private memory remain deferr
    review. Improve screen-reader/keyboard usability with human testing. Add a
    contribution export/import path and simple follow/change notifications only
    after readers show a need for them.
-3. Implement one authorized real inference path with local credential custody.
-   Begin with one bounded job and an explicit resource budget. Do not promise a
-   universal subscription connector. Manual artifact contribution remains useful.
+3. Evaluate the new local API connector with a bounded real assignment and human
+   review. Gather setup friction before adding persistent key storage, unattended
+   operation, or other providers. Manual artifact contribution remains useful.
 4. Add MCP over the existing domain contract when an actual agent client needs it.
    Resource reads expose current state, provenance, and open questions. Tools
    submit contributions and drafts, never human votes or direct publication.

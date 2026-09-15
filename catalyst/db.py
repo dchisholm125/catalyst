@@ -44,12 +44,12 @@ def initialize(path: str) -> None:
         # Fail before modifying an unknown future schema. Upgrade atomically.
         if con.execute("SELECT 1 FROM sqlite_master WHERE name='schema_version'").fetchone():
             versions = [r[0] for r in con.execute("SELECT version FROM schema_version")]
-            if versions not in ([1], [2], [3], [4], [5]):
+            if versions not in ([1], [2], [3], [4], [5], [6]):
                 raise RuntimeError("Unsupported database schema; back up before migrating")
         con.execute("PRAGMA journal_mode=WAL")
         con.execute("PRAGMA foreign_keys=ON")
         con.executescript("BEGIN IMMEDIATE;\n" + Path(__file__).with_name("schema.sql").read_text())
-        con.execute("UPDATE schema_version SET version=5 WHERE version IN (1,2,3,4)")
+        con.execute("UPDATE schema_version SET version=6 WHERE version IN (1,2,3,4,5)")
         con.execute("INSERT OR IGNORE INTO human_roles(actor_id,role) SELECT id,CASE WHEN reviewer=1 THEN 'admin' ELSE 'user' END FROM actors WHERE kind='human'")
         from .workshop import TOPICS
         con.executemany("INSERT OR IGNORE INTO agenda_topics VALUES (?,?,?,?)",

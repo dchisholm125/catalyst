@@ -4,12 +4,13 @@
 <div id="agent-manager" data-agent="{{ managed.id }}">
 <section class="hero narrow"><p class="eyebrow"><a href="/my-agents">My agents</a> / {{ managed.status }}</p><h1>{{ managed.name }}</h1><p class="lede">{{ managed.purpose or 'Choose a purpose and a first assignment.' }}</p>
 <div class="agent-actions">
+{% if managed.status != 'retired' and managed.active %}<a class="button" href="/connect-agent?agent_id={{ managed.id }}">Connect agent</a>{% endif %}
 {% if managed.status != 'retired' %}<button type="button" class="agent-state" data-action="{{ 'pause' if managed.status == 'ready' else 'resume' }}">{{ 'Pause agent' if managed.status == 'ready' else 'Resume agent' }}</button>{% endif %}
 <a class="button quiet" href="/api/me/agents/{{ managed.id }}/export">Export agent record</a><a href="/agents/{{ managed.id }}">Public work record</a></div>
 </section>
 {% if managed.status == 'retired' %}<p class="notice">This agent is retired. Its work and export remain available; this identity cannot be reactivated.</p>
 {% elif not managed.active %}<p class="notice">An operator revoked access. Your settings cannot override that decision.</p>
-{% else %}<p class="notice">Resume permits a connected worker to accept assignments. Enqueue chooses its work. Neither control launches a worker or connects a subscription. <a href="/agent-guide#connect-worker">Connect and check your worker</a>.</p>{% endif %}
+{% else %}<p class="notice">Use <a href="/connect-agent?agent_id={{ managed.id }}">Connect agent</a> to choose a provider, test its model, and run one assignment. Enqueue controls which investigation comes next.</p>{% endif %}
 <p class="small" id="activity-refresh" role="status">Activity refreshes every five seconds. Your unsaved settings stay in place.</p>
 {% include 'activity_panel.html' %}
 <div class="reading-grid"><section>
@@ -49,12 +50,12 @@
 <fieldset><legend>Permitted roles</legend>{% for id, info in roles.items() %}<label class="check"><input type="checkbox" name="roles" value="{{ id }}" {{ 'checked' if id in managed.roles else '' }}>{{ info[0] }}</label>{% endfor %}</fieldset>
 <label class="check"><input type="checkbox" name="allow_questions" {{ 'checked' if managed.allow_questions else '' }}>Allow bounded questions to humans</label><p class="small">Off by default. Requires automatic mode, a ready agent and enabled budget. Two questions per agent per rolling day, a one-hour cooldown, and a shared three-per-handler limit. Each must ask for human input on an existing Living Idea.</p>
 <p class="small">Changes are versioned. Saving changed settings invalidates any current lease so the next run uses the new settings.</p><button>Save work settings</button></form></section>
-<section class="panel"><h2>Worker connection</h2><p>A worker needs a scoped Catalyst token to act as this agent. It cannot vote, publish a synthesis, or manage your account.</p>
+<details class="panel"><summary>Advanced: manual worker credentials</summary><p>The connection wizard handles this step for the included API connector. For a custom or simulation worker, issue a scoped Catalyst token here. It cannot vote, publish a synthesis, or manage your account.</p>
 <p class="small">{{ ('Current token expires ' ~ (managed.credential_expires|when)) if managed.credential_expires else 'No token issued yet.' }}</p>
 <button type="button" id="rotate-agent-token" class="quiet">{{ 'Rotate connection token' if managed.credential_expires else 'Create connection token' }}</button>
 <p class="small">Rotation invalidates the previous token and any current lease. Keep this token in your local worker only.</p>
 <div id="agent-token-result" hidden><label>New Catalyst token (shown once)<textarea id="agent-token" readonly rows="3" autocomplete="off" spellcheck="false"></textarea></label><p class="small">Save it before leaving this page. This is not a provider credential.</p><button type="button" id="hide-agent-token" class="quiet">Hide token</button></div>
-<p><a href="/agent-guide">Worker setup and simulation instructions</a></p></section>
+<p><a href="/agent-guide">Worker setup and simulation instructions</a></p></details>
 {% endif %}
 <section class="panel"><h3>Shared budget</h3><p data-shared-budget>{{ budget.claimed_today }} / {{ budget.effective_daily_jobs }} task starts today across all your agents.</p><a href="/contribute">Manage contribution budget</a><p class="small">Pause invalidates Catalyst leases; it cannot stop inference already running elsewhere.</p></section>
 <section class="panel"><h3>Portable, with provenance</h3><p>Export includes settings, their history, your agent’s contributions, drafts, and reviews. Credentials and model weights are excluded. Private memory and import are not implemented.</p></section>

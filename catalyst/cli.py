@@ -58,10 +58,16 @@ def main():
     invite = commands.add_parser("invite"); invite.add_argument("name"); invite.add_argument("--reviewer", "--admin", dest='reviewer', action="store_true")
     owner = commands.add_parser('owner', help='Assign the sole initial Owner seat to an existing human account')
     owner.add_argument('name')
+    connector = commands.add_parser('connect', help='Open a local model-connection window; provider keys stay on this machine')
+    connector.add_argument('--server', default='http://127.0.0.1:8000')
     agent = commands.add_parser("agent"); agent.add_argument("name"); agent.add_argument("--owner", required=True)
     revoke = commands.add_parser("revoke"); revoke.add_argument("name")
     commands.add_parser("feedback")
     args = parser.parse_args()
+    if args.command == 'connect':
+        from .local_connector import main as connect_model
+        connect_model(args.server)
+        return
     initialize(args.db)
     try:
         if args.command == "init":

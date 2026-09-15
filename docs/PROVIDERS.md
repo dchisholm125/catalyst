@@ -1,15 +1,23 @@
 # Provider integration constraints
 
-Reviewed against official documentation on **2026-09-14**. Provider rules and
+Reviewed against official documentation on **2026-09-15**. Provider rules and
 interfaces can change. This is an engineering decision record, not legal advice
 or provider authorization. Re-check before implementing an adapter.
 
 ## What is implemented
 
-A provider-independent queue, contributor-owned agent credentials, bounded task
-starts, cancellation, and a no-inference mock worker. No provider OAuth flow, API
-inference call, quota endpoint, consumer-plan connection, or fallback billing.
-The website accepts resulting contributions; it does not pool inference access.
+The provider-independent queue now has an optional contributor-run **OpenAI or
+Anthropic API connector**. The wizard requires explicit separate-billing consent.
+A local loopback window accepts the key; it stays in process memory and is sent
+only to the provider's fixed HTTPS host. Catalyst stores model/test metadata,
+progress, and resulting contributions, never provider keys. The no-inference mock
+worker remains available. No consumer login, subscription metering, paid fallback,
+automatic credit purchase, or automatic inference retry is implemented.
+
+Checking a key lists models without inference. A separately authorized model test
+precedes connection confirmation. Each explicit run requests one investigation
+and one generation, then waits. No tools, shell, browsing, or external evidence
+retrieval is enabled. See [connection setup and limits](ITERATION_06.md).
 
 ## OpenAI
 
@@ -23,15 +31,22 @@ work contributing an artifact and operating an unattended third-party inference
 pool are different questions; do not conflate them.
 
 Sources:
-- https://developers.openai.com/codex/auth/
-- https://developers.openai.com/codex/noninteractive/
+- https://learn.chatgpt.com/docs/auth
+- https://learn.chatgpt.com/docs/non-interactive-mode
 - https://help.openai.com/en/articles/9793128-about-chatgpt-pro-tiers
 
-Decision: no ChatGPT-plan integration in the alpha. A donor-operated Codex adapter
-remains a research item requiring a provider-specific review of the exact workflow,
-including authorization, credential isolation, permitted workload, and metering.
-Do not interpret CLI authentication support as permission to donate arbitrary
-subscription allowance to a public service.
+Decision: no ChatGPT-plan integration. We cannot establish permission for the
+requested Pro-funded Catalyst queue, and a user-warning checkbox cannot grant it.
+The implemented API-key adapter uses `/v1/models` and streaming `/v1/responses`
+at `https://api.openai.com`, with `store: false` and no tools. This does not override
+provider retention policies. The returned model and response ID record provenance;
+a catalog listing alone does not prove endpoint compatibility. Every selected
+model must pass the explicit probe. No consumer tokens or cookies are extracted.
+
+API sources:
+- https://platform.openai.com/docs/api-reference/responses
+- https://platform.openai.com/docs/guides/streaming-responses
+- https://openai.com/policies/terms-of-use/
 
 ## Anthropic
 
@@ -46,9 +61,16 @@ aggregate consumer subscriptions.
 Source:
 - https://code.claude.com/docs/en/legal-and-compliance
 
-Decision: no Claude subscription adapter or credential collection. A future API
-adapter must clearly identify its separate billing and local key custody. Seek
-clarification before relying on a subscription-funded unattended workload.
+Decision: no Claude subscription adapter or consumer credential collection. The
+implemented dedicated-key adapter uses `https://api.anthropic.com/v1/models` and
+`/v1/messages`, version `2023-06-01`, with separate billing and local key custody.
+It configures no tools, thinking, or fallback policy. Only visible text deltas
+are retained; a normal complete text response is required.
+
+API sources:
+- https://platform.claude.com/docs/en/api/overview
+- https://platform.claude.com/docs/en/build-with-claude/streaming
+- https://platform.claude.com/docs/en/api/models/list
 
 ## Other providers and local models
 
@@ -56,7 +78,21 @@ Not assessed; not advertised as compatible. Evaluate each provider independently
 A local open-weight model may be a useful future contributor path, but its runtime,
 model license, hardware use, reliability, and data boundaries need explicit review.
 
-## Metering contract for a future client
+## Metering and verification limits
+
+Provider quota, subscription allowance, and remaining money are **unknown**.
+Catalog access and a successful model response do not establish a subscription
+or remaining capacity. Tests are reported by a contributor-controlled connector,
+not independently attested by the provider.
+
+The connector caps supplied context at 32,000 characters and requests at most
+1,200 output tokens (512 for a probe). These are request bounds, not a currency
+cap. Provider pricing and account controls govern charges, including costs of
+cancelled or failed requests. Catalyst task budgets do not meter money or tokens.
+Keys are not saved to disk. Disconnect clears local references and HTTP headers;
+this is not forensic memory erasure or protection against local malware.
+
+## Metering contract for future automation
 
 Report provider, authentication mode, supported workload, measured/estimated/unknown
 quota, measurement time, reset windows, and confidence. Never report stale or

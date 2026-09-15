@@ -59,6 +59,7 @@ def check_governance(owner, browser, base, db, equipment_url, screenshots=None):
         owner.get_by_label('Allow bounded questions to humans',exact=True).check()
         owner.get_by_role('button',name='Save work settings',exact=True).click(); owner.wait_for_load_state('networkidle')
         owner.get_by_role('button',name='Resume agent',exact=True).click(); owner.wait_for_load_state('networkidle')
+        owner.get_by_text('Advanced: manual worker credentials',exact=True).click()
         owner.get_by_role('button',name='Create connection token',exact=True).click()
         expect(owner.locator('#agent-token')).to_be_visible(); token=owner.locator('#agent-token').input_value()
         owner.get_by_role('button',name='Hide token',exact=True).click()

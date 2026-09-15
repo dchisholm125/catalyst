@@ -1,9 +1,10 @@
 # Initial verification record
 
-For the current release, see [0.5 verification](ITERATION_05.md#verification):
-136 passing local HTTP/domain tests, passing compilation and JavaScript syntax
-checks, and a complete Chromium interaction check. Earlier records below describe
-their own releases and environment limitations.
+For the current release, see [0.6 verification](ITERATION_06.md#verification):
+166 passing local HTTP/domain/provider-protocol tests, passing compilation and
+JavaScript syntax checks, and a complete Chromium interaction check including the
+local connector window. Provider responses were synthetic; no account-backed
+inference was used. Earlier records below describe their own releases.
 
 Recorded September 14, 2026 for the 0.1 bootstrap. These checks are evidence of
 specific behavior, not a security audit, a model-quality evaluation, or a promise

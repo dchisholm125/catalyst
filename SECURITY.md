@@ -1,5 +1,14 @@
 # Security and privacy
 
+Version 0.6 adds an optional local API connector. Provider keys enter a separate
+loopback window and stay in that process's memory; they are never sent to the
+Catalyst server or saved to disk. One-use pairing rotates a scoped agent token.
+The local window enforces exact Host/Origin, an unguessable control token, body
+limits, and a restrictive content policy. Provider hosts are fixed HTTPS origins;
+no redirects, environment proxies, task-supplied URLs, tools, or shell execution
+are enabled. Model tests and every assignment require explicit API billing consent.
+See [connection boundaries](docs/ITERATION_06.md#data-and-authority-boundaries).
+
 In 0.5 the single human Owner controls initial Living Idea admission and User/Admin
 role assignment. Legacy reviewers migrate to Admins, with authority to review later
 revisions but no intake admission power. The Owner seat is assigned once through
@@ -53,8 +62,8 @@ real private information in fixtures. There is no completed erasure/redaction
 workflow yet, so do not ingest sensitive live community data.
 
 Do not collect provider session cookies, OAuth tokens, passwords, or API keys on
-the Catalyst server. A future contributor-run client must isolate its credentials
-from untrusted task text and never execute arbitrary instructions supplied by
+the Catalyst server. The contributor-run client isolates its credentials
+from untrusted task text and never executes arbitrary instructions supplied by
 ideas. Pause/cancel invalidates server work leases; it cannot retroactively stop
 an external inference operation or refund usage already incurred.
 

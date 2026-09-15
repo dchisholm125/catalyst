@@ -253,3 +253,27 @@ BEGIN SELECT RAISE(ABORT, 'Preserve the original agent question'); END;
 CREATE TRIGGER IF NOT EXISTS roles_human_only BEFORE INSERT ON human_roles
 WHEN (SELECT kind FROM actors WHERE id=NEW.actor_id)!='human'
 BEGIN SELECT RAISE(ABORT, 'Only human accounts receive User or Admin roles'); END;
+
+-- Version 6: short-lived local pairing and private, reported model connections.
+-- Provider keys, account passwords, OAuth tokens and raw provider responses never belong here.
+CREATE TABLE IF NOT EXISTS connection_pairings (
+ agent_id TEXT PRIMARY KEY REFERENCES actors(id), owner_id TEXT NOT NULL REFERENCES actors(id),
+ provider TEXT NOT NULL CHECK(provider IN ('openai','anthropic')),
+ code_digest TEXT NOT NULL UNIQUE, challenge TEXT NOT NULL,
+ previous_credential TEXT NOT NULL, profile_version INTEGER NOT NULL,
+ created REAL NOT NULL, expires REAL NOT NULL
+);
+CREATE TABLE IF NOT EXISTS model_connections (
+ agent_id TEXT PRIMARY KEY REFERENCES actors(id), credential_digest TEXT NOT NULL,
+ provider TEXT NOT NULL CHECK(provider IN ('openai','anthropic')),
+ challenge TEXT NOT NULL, model TEXT NOT NULL DEFAULT '',
+ state TEXT NOT NULL DEFAULT 'awaiting-key', verified_at REAL, last_seen REAL NOT NULL,
+ response_id TEXT NOT NULL DEFAULT '',
+ command_id TEXT NOT NULL DEFAULT '', command_state TEXT NOT NULL DEFAULT 'idle',
+ command_created REAL, task_id TEXT REFERENCES tasks(id), task_attempt INTEGER,
+ result_id TEXT REFERENCES contributions(id), message TEXT NOT NULL DEFAULT ''
+);
+CREATE TABLE IF NOT EXISTS connection_run_receipts (
+ agent_id TEXT NOT NULL REFERENCES actors(id), request_key TEXT NOT NULL, created REAL NOT NULL,
+ PRIMARY KEY(agent_id,request_key)
+);

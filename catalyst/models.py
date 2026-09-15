@@ -188,6 +188,40 @@ class AgentSettings(StrictModel):
     allow_questions: bool = False
 
 
+class ConnectionSetup(StrictModel):
+    provider: Literal['openai', 'anthropic']
+    access: Literal['api']
+    roles: list[Role] = Field(min_length=1, max_length=6)
+    version: int = Field(ge=1, strict=True)
+    api_billing_accepted: Literal[True]
+
+
+class PairingCode(StrictModel):
+    code: str = Field(min_length=32, max_length=100)
+
+
+class ConnectionReport(StrictModel):
+    state: Literal['verified', 'stopped']
+    model: str = Field(default='', max_length=120, pattern=r'^[A-Za-z0-9._:/-]*$')
+    response_id: str = Field(default='', max_length=160, pattern=r'^[A-Za-z0-9_-]*$')
+    answer: str = Field(default='', max_length=120)
+
+
+class ConnectionRun(StrictModel):
+    request_key: str = Field(min_length=16, max_length=80)
+    resume: bool = False
+    enable_one_job_budget: bool = False
+    api_billing_accepted: Literal[True]
+
+
+class ConnectionCommand(StrictModel):
+    command_id: str = Field(min_length=16, max_length=80)
+
+
+class ConnectionFinished(ConnectionCommand):
+    outcome: Literal['completed', 'failed', 'cancelled']
+
+
 class AgentAction(StrictModel):
     action: Literal['pause', 'resume', 'retire']
 

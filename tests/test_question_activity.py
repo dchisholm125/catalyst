@@ -254,7 +254,7 @@ def test_v3_upgrade_preserves_questions_settings_and_work(site):
             con.execute(f'DROP TABLE {table}')
         con.execute('UPDATE schema_version SET version=3')
     backup = upgrade(path)
-    assert backup and 'pre-v5' in backup.name and backup.stat().st_mode & 0o077 == 0
+    assert backup and 'pre-v6' in backup.name and backup.stat().st_mode & 0o077 == 0
     assert upgrade(path) is None
     assert sid in owner.get('/my-questions').text
     assert observe(owner, aid)['handler_status'] == 'paused'

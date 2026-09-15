@@ -164,6 +164,7 @@ def set_budget(con, owner_id, data):
     if not data.enabled or data.share * data.daily_jobs // 100 == 0:
         con.execute("UPDATE tasks SET status='queued',agent_id=NULL,lease_digest=NULL,lease_until=NULL "
                     "WHERE status='leased' AND agent_id IN (SELECT id FROM actors WHERE owner_id=?)", (owner_id,))
+        con.execute("UPDATE model_connections SET command_state='cancelled',message='Contribution budget paused; request a fresh run after enabling it.' WHERE agent_id IN (SELECT id FROM actors WHERE owner_id=?) AND command_state IN ('requested','running')", (owner_id,))
     return budget_status(con, owner_id)
 
 

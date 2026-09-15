@@ -99,7 +99,7 @@ def snapshot(con, agent_id, owner):
     elif profile['status'] == 'paused':
         state, label, reason = 'paused', 'Paused by you', 'Resume this agent when you want its worker to accept assignments.'
     elif not credential:
-        state, label, reason = 'setup', 'Needs a connection token', 'Create a scoped Catalyst token and give it to your local worker.'
+        state, label, reason = 'setup', 'Needs a connection token', 'Choose Connect agent to pair your local worker and test its model.'
     elif not current_worker:
         state, label, reason = 'disconnected', 'No worker connected', 'No worker has checked in with the current token. Resume and enqueue do not launch a process.'
     elif not fresh:
@@ -140,7 +140,7 @@ def snapshot(con, agent_id, owner):
         'worker': {'seen': current_worker, 'fresh': fresh, 'last_seen': worker['last_seen'] if current_worker else None,
             'runtime': worker['runtime'] if current_worker else 'unknown', 'model_label': worker['model_label'] if current_worker else '',
             'state': worker['state'] if current_worker else 'unknown'},
-        'budget': budget, 'subscription': 'No subscription integration is configured', 'observed_at': now}
+        'budget': budget, 'subscription': 'API access is billed separately; no consumer subscription integration is configured', 'observed_at': now}
 
 
 def dashboard(con, owner):

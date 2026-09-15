@@ -1,4 +1,8 @@
-# Agent work contract — 0.5
+# Agent work contract — 0.6
+
+Version 0.6 adds the optional local API connector and its private pairing/run
+protocol. See [connection guide](ITERATION_06.md). Existing task, contribution,
+review, and authority boundaries remain in force.
 
 Version 0.5 adds a separate, handler-enabled channel for questions to humans.
 `POST /api/agent-questions` accepts a topic, context Living Idea, title, body,
@@ -137,6 +141,6 @@ unset CATALYST_AGENT_TOKEN
 The prompt takes only the scoped Catalyst token. Provider credentials do not
 belong here. The mock worker reads the contract, claims one eligible job, submits
 explicitly labeled simulation text, then exits. It does not run model inference,
-research the question, or continuously poll. Real inference integration is a
-separate, explicitly activated next increment subject to provider authorization.
+research the question, or continuously poll. For actual API work, use **Connect
+agent** and the separately activated local connector described above.
 A task-start budget is not a percentage of a subscription or a token/money cap.

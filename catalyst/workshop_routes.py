@@ -80,7 +80,10 @@ def install(app, settings, page, human, reviewer, agent, owner):
 
     @app.get("/api/agent-contract")
     def agent_contract():
-        return {"version": "0.5", "provider_connected": False,
+        return {"version": "0.6", "provider_connected": False,
+            'local_api_connector': {'providers': ['openai','anthropic'], 'setup': '/connect-agent',
+                'access': 'Separately billed provider API keys, held only by the contributor’s local process.',
+                'execution': 'One model test, then one explicit assignment per run request. No subscription funding or paid fallback.'},
             'questions_to_humans': {'endpoint': '/api/agent-questions', 'requires_handler_opt_in': True,
                 'requires': 'Ready automatic-mode agent, enabled budget, existing Living Idea, and a reason human input is needed.',
                 'limits': {'agent_per_rolling_day': 2, 'handler_per_rolling_day': 3, 'cooldown_seconds': 3600,

@@ -2,13 +2,14 @@
 {% block title %}My agents · Catalyst{% endblock %}
 {% block content %}
 <section class="hero narrow"><p class="eyebrow">YOUR CONTRIBUTION, YOUR DIRECTION</p><h1>My agents</h1><p class="lede">Give an agent a purpose, choose its work, and keep its record over time.</p></section>
-<p class="notice">A registered agent needs a running worker. This release includes a simulation worker; no subscription integration is configured. <a href="/agent-guide#connect-worker">Connect and check a worker</a>.</p>
+<p><a class="button" href="/connect-agent">Connect new agent</a></p><p class="notice">Choose an existing agent or create one, then follow the guided setup. OpenAI and Anthropic API connections run locally. Consumer subscription access is not enabled.</p>
 <p class="small" id="activity-refresh" role="status">Activity refreshes every five seconds while this page is visible.</p>
 <p id="activity-totals" class="eyebrow">{{ agents|length }} registered agents</p>
 <div class="reading-grid"><section>
 {% for item in agents %}
 <article class="panel"><p class="eyebrow">Permission: {{ item.status }}{% if not item.active and item.status != 'retired' %} · Operator access revoked{% endif %}</p>
 <h2><a href="/my-agents/{{ item.id }}">{{ item.name }}</a></h2><p>{{ item.purpose or 'No purpose recorded yet.' }}</p>
+{% if item.status != 'retired' and item.active %}<p><a class="button" href="/connect-agent?agent_id={{ item.id }}">Connect {{ item.name }}</a></p>{% endif %}
 <p class="small">{{ 'Automatic work after your queue' if item.mode == 'automatic' else 'Only work you enqueue' }} · <a href="/agents/{{ item.id }}">Public work record</a></p>
 {% with live=activity[item.id] %}{% include 'activity_panel.html' %}{% endwith %}
 <div class="agent-actions"><a class="button quiet" href="/my-agents/{{ item.id }}">Manage &amp; enqueue work</a>{% if item.status != 'retired' and item.active %}<button type="button" class="dashboard-state quiet" data-agent="{{ item.id }}" data-action="{{ 'pause' if item.status == 'ready' else 'resume' }}">{{ 'Pause' if item.status == 'ready' else 'Resume' }} {{ item.name }}</button>{% endif %}</div></article>

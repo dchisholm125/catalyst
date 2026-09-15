@@ -25,6 +25,7 @@ def event(con, agent_id, name, body):
 def release(con, agent_id):
     con.execute("UPDATE tasks SET status='queued',agent_id=NULL,lease_digest=NULL,lease_until=NULL "
                 "WHERE status='leased' AND agent_id=?", (agent_id,))
+    con.execute("UPDATE model_connections SET command_state='cancelled',message='Agent settings or permission changed; request a new run.' WHERE agent_id=? AND command_state IN ('requested','running')", (agent_id,))
 
 
 def register(con, owner, data):

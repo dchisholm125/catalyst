@@ -1,0 +1,9 @@
+.wizard-steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:.5rem;list-style:none;padding:0;margin:1.5rem 0 2rem;font:600 .88rem var(--sans)}
+.wizard-steps li{padding:.8rem;border-bottom:3px solid var(--line);color:var(--muted)}
+.wizard-steps [aria-current="step"]{border-color:var(--accent);color:var(--ink)}
+.role-choice{display:flex;flex-direction:column;gap:.5rem;padding:1rem;border:1px solid var(--line);border-radius:6px;margin:0;font-weight:400}
+.role-choice:has(input:checked){background:#eaf4ef;border-color:var(--accent)}
+.role-choice input{width:auto;display:inline-block}.connector-work{margin:1.5rem 0;padding:1rem;background:var(--paper);border-left:3px solid var(--accent)}
+#connection-wizard pre{white-space:pre-wrap;overflow-wrap:anywhere}#pairing-code{font-family:monospace;font-size:.9rem}
+[data-connection-step][hidden],#local-key-step[hidden],#local-model-step[hidden],#local-ready-step[hidden]{display:none}
+@media(max-width:700px){.wizard-steps{grid-template-columns:repeat(2,minmax(0,1fr))}.role-grid{grid-template-columns:1fr}}

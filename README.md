@@ -4,9 +4,28 @@
 
 Humans and AI develop **Reflections**, **Catalysts**, and **Claims** together. The idea is the lasting object; conversation is how it develops. Preserve the origin, challenge the assumptions, and develop the next version.
 
-**Status: runnable local alpha, not a deployed public service.** No model provider is connected. No subscription usage is collected, pooled, or spent. The included worker is explicitly a simulation.
+**Status: runnable local alpha, not a deployed public service.** Optional local connectors use OpenAI or Anthropic API access with separate billing and explicit activation. No consumer subscription usage is collected, pooled, or spent. A no-inference simulation remains available.
 
-## New in 0.5
+## New in 0.6
+
+**Connect agent** guides an existing or new agent through roles, provider choice,
+API access, local pairing, a model test, and one explicitly requested assignment.
+Open **My agents → Connect agent** to begin. The API key goes into a separate
+local browser window opened by `catalyst connect`; it stays in that process's
+memory and is not sent to Catalyst or saved to disk.
+
+The selected model must answer a small, separately authorized test before setup
+shows success. This is evidence reported by your connector, not independent
+provider attestation. A run streams visible response excerpts to your dashboard,
+submits one contribution for human review, then waits for another explicit request.
+No tools, shell commands, automatic inference retries, or paid fallback are used.
+
+**ChatGPT Pro and Claude consumer subscriptions are unavailable in this flow.**
+Provider CLI sign-in support does not establish permission to fund Catalyst's
+automatic queue. API usage is billed separately. See [the policy review](docs/PROVIDERS.md)
+and [connection setup, limits, and verification](docs/ITERATION_06.md).
+
+## Previously in 0.5
 
 **One Owner, accountable administration.** `/owner` manages User/Admin roles;
 `/admin` reviews incoming questions. Only the single human Owner can admit an
@@ -39,7 +58,7 @@ approval quorum is not implemented.
 reported work stage, response excerpts, recent results, and reasons for waiting.
 It refreshes without reloading unsaved forms. Resume grants permission; it does
 not launch a worker. Model labels are worker reports, not verified subscription
-connections. No real inference adapter is included in this release.
+connections. The optional API connector added in 0.6 reports a local model test.
 
 The mock worker reports its stages and stops after one assignment. To watch a
 labeled simulation, use `python examples/mock_worker.py --demo-seconds 15` after
@@ -65,7 +84,7 @@ No task is invented when a selected idea or topic has no eligible investigation.
 
 See [agent stewardship and controls](docs/AGENT_STEWARDSHIP.md) for exact behavior,
 data boundaries, upgrade instructions, and limitations. No private memory vault,
-provider adapter, background daemon, or model training is included.
+background daemon or model training is included.
 
 ## Previously in 0.2
 
@@ -78,27 +97,27 @@ worker useful direction without autonomous posting loops.
 The interface now has editorial serif typography, distinct type badges, combined
 type/origin filters, and compact accessible idea panels with shareable view URLs.
 `/agents` shows work records, not a popularity leaderboard or evidence of training.
-No live inference or consumer subscription adapter is included.
+Consumer subscription adapters remain unavailable.
 
 **Existing install:** stop the server, activate its environment, then:
 
 ```bash
 git pull --ff-only origin main &&
+python -m pip install -e '.[dev]' &&
 python scripts/upgrade.py &&
-catalyst owner "Your name" &&
 python -m uvicorn catalyst.app:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
-The script backs up a v1–v4 database before its additive v5 upgrade. No database
-reset or new application dependencies. Existing agent identities and credentials
-are preserved. Use your existing human account's exact name for the one-time
-Owner assignment; it cannot replace an occupied seat. Refresh your session to
-see Owner console. See [current upgrade notes](docs/ITERATION_05.md#upgrade),
+The script backs up a v1–v5 database before its additive v6 upgrade. No database
+reset is needed. HTTPX is now an application dependency. Existing agent identities,
+credentials, and the Owner seat are preserved. Installations predating 0.5 without
+an Owner should run `catalyst owner "Your name"` once for an existing human account.
+It cannot replace an occupied seat. See [current upgrade notes](docs/ITERATION_06.md#upgrade),
 [agent work contract](docs/AGENT_WORK.md), and [verification](docs/VERIFICATION.md).
 
 ## Run locally
 
-Python 3.11 or newer; Linux, macOS, or Windows with Python. Check the selected interpreter: some Linux distributions still use Python 3.10 for `python3`. Use a separate Python 3.11+ environment; do not replace the OS Python. No Node build, database service, provider key, or paid inference is required.
+Python 3.11 or newer; Linux, macOS, or Windows with Python. Check the selected interpreter: some Linux distributions still use Python 3.10 for `python3`. Use a separate Python 3.11+ environment; do not replace the OS Python. No Node build or database service is required. Browsing and simulation need no provider key; the optional model connector requires separately billed API access.
 
 ```bash
 git clone https://github.com/dchisholm125/catalyst.git
@@ -142,10 +161,10 @@ The default publication cadence is 60 seconds. In an isolated development enviro
 
 The slider at `/contribute` allocates a percentage of a **self-defined daily task-start budget**, not a percentage of a ChatGPT or Claude plan. With a budget of 8 and a share of 25%, Catalyst permits at most 2 task starts per UTC day. Attempts count even when work fails. One task can be in flight per contributor. Contributions do not buy votes.
 
-Provider quota is displayed as **unknown**. Subscription adapters, real metering, local model adapters, and an MCP interface are roadmap work, not functioning integrations. Do not paste provider passwords, OAuth tokens, session cookies, or API keys into Catalyst. See [provider constraints](docs/PROVIDERS.md).
+Provider quota is displayed as **unknown**. Subscription adapters, quota metering, local model runtimes, and an MCP interface remain roadmap work. Only the connector's separate local window accepts API keys; the Catalyst website never does. Never provide consumer passwords, OAuth tokens, or session cookies. See [provider constraints](docs/PROVIDERS.md).
 
 To exercise the protocol with no inference, register an agent at `/my-agents`,
-create its connection token, enqueue work, and resume it. Enable your shared
+open **Advanced: manual worker credentials**, create its connection token, enqueue work, and resume it. Enable your shared
 budget at `/contribute`. Then, in a local terminal with the project environment
 activated:
 
@@ -171,6 +190,8 @@ for local administration; it preserves its legacy ready-by-default behavior.
 | `catalyst/schema.sql` | SQLite schema and immutability constraints |
 | `catalyst/workshop.py`, `catalyst/workshop_routes.py` | Human agenda, role briefs, bounded work, and history |
 | `catalyst/agent_management.py`, `catalyst/agent_routes.py` | Agent lifecycle, private personal queues, and export |
+| `catalyst/connections.py`, `catalyst/connection_routes.py` | Private pairing, model-test records, explicit run commands |
+| `catalyst/local_connector.py`, `catalyst/providers.py` | Local key window and bounded OpenAI/Anthropic API worker |
 | `catalyst/governance.py`, `catalyst/intake.py`, `catalyst/intake_routes.py` | Owner seat, permissions, public intake, and agent-question limits |
 | `catalyst/models.py` | Validated contribution and synthesis contracts |
 | `catalyst/templates/`, `catalyst/static/` | Human interface |

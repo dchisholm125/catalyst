@@ -21,6 +21,7 @@ def check_my_agents(page, base, root, env, screenshots=None):
         if checkbox.get_attribute('value') != 'researcher': checkbox.uncheck()
     page.get_by_role('button', name='Save work settings', exact=True).click()
     page.wait_for_load_state('networkidle')
+    page.get_by_text('Advanced: manual worker credentials',exact=True).click()
     page.get_by_role('button', name='Create connection token', exact=True).click()
     expect(page.locator('#agent-token')).to_be_visible()
     token = page.locator('#agent-token').input_value()
@@ -122,6 +123,7 @@ def check_my_agents(page, base, root, env, screenshots=None):
     record = json.loads(Path(download_info.value.path()).read_text())
     assert record['format_version'] == 1 and len(record['contributions']) == 1
     assert token not in json.dumps(record)
+    page.get_by_text('Advanced: manual worker credentials',exact=True).click()
     page.get_by_role('button', name='Rotate connection token', exact=True).click()
     expect(page.locator('#agent-token')).to_be_visible()
     new_token = page.locator('#agent-token').input_value()

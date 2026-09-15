@@ -26,6 +26,7 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("--browser", default=shutil.which("chromium"))
     parser.add_argument("--screenshots", type=Path)
+    parser.add_argument("--connection-only", action="store_true", help="Run only the provider connection browser exercise")
     args = parser.parse_args()
     try:
         from playwright.sync_api import sync_playwright, expect
@@ -61,6 +62,17 @@ def main():
                     page.locator('input[name="token"]').fill(invitation)
                     page.get_by_role("button", name="Continue", exact=True).click()
                     page.wait_for_url(base + "/")
+                    if args.connection_only:
+                        from connection_browser_smoke import check_connection
+                        try:
+                            check_connection(page, browser, base, args.screenshots)
+                        except Exception:
+                            print(json.dumps({'javascript_errors':errors,'url':page.url,'visible_text':page.locator('main').inner_text()[:4000]}))
+                            raise
+                        assert errors == [], errors
+                        print(json.dumps({'status':'passed','checks':'connection wizard and local worker','browser':browser.version}))
+                        browser.close()
+                        return
                     assert page.get_by_role("button", name="Sign out").is_visible()
                     assert page.locator(".idea-row").count() == 3
                     colors = page.locator(".type-badge").evaluate_all("els => els.map(el => getComputedStyle(el).backgroundColor)")
@@ -168,6 +180,8 @@ def main():
                     assert "SIMULATION ONLY" in page.inner_text("main")
                     from agent_browser_smoke import check_my_agents
                     check_my_agents(page, base, ROOT, env, args.screenshots)
+                    from connection_browser_smoke import check_connection
+                    check_connection(page, browser, base, args.screenshots)
                     from governance_browser_smoke import check_governance
                     check_governance(page, browser, base, db, equipment_url, args.screenshots)
                     assert errors == [], errors
@@ -185,7 +199,10 @@ def main():
                                    "Owner console and User/Admin changes", "Admin promotion without admission",
                                    "public Owner override provenance", "demotion in an existing session",
                                    "handler opt-in to agent questions", "agent-question cooldown",
-                                   "human response and Admin resolution", "mobile administration and intake"]}
+                                   "human response and Admin resolution", "mobile administration and intake",
+                                   "guided provider setup and explicit API billing", "subscription option explains restrictions",
+                                   "local key window and model test", "one explicit API-protocol assignment with visible streaming",
+                                   "connection confirmation and disconnect", "new identity within wizard"]}
                     print(json.dumps(report, indent=2))
                     browser.close()
             finally:

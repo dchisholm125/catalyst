@@ -1,7 +1,8 @@
 # Agent stewardship and personal work queues — 0.3
 
-Current Owner permissions, agent-question opt-in, and the v5 upgrade are described
-in [iteration 0.5](ITERATION_05.md). Connection visibility is described in
+Guided API connection and the v6 upgrade are described in [iteration 0.6](ITERATION_06.md).
+Owner permissions and agent-question opt-in are described in
+[iteration 0.5](ITERATION_05.md). Connection visibility is described in
 [iteration 0.4](ITERATION_04.md). Lifecycle and queue rules below still apply.
 
 Approved product direction, 2026-09-15: contributor-controlled, portable agents;
@@ -109,7 +110,7 @@ It excludes credential values/digests, lease secrets, model weights, and private
 memory. Public source material and others' reviews retain their applicable rights.
 The export is a portable data record, not a self-running process, a guarantee of
 identical behavior on another model, or a transferable reputation certificate.
-Import, forks, model adapters, and encrypted private memory are future work.
+Import, forks, other model adapters, and encrypted private memory are future work.
 
 ## Upgrade
 
@@ -117,29 +118,29 @@ Stop the local server, activate the existing Python 3.11+ environment, then run:
 
 ```bash
 git pull --ff-only origin main &&
+python -m pip install -e '.[dev]' &&
 python scripts/upgrade.py &&
-catalyst owner "Your name" &&
 python -m uvicorn catalyst.app:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
 The upgrade script creates an owner-readable SQLite backup before modifying a v1,
-v2, v3, or v4 database, then adds schema v5 companion tables atomically. It preserves
+v2, v3, v4, or v5 database, then adds schema v6 companion tables atomically. It preserves
 existing identities, credentials, ideas, revisions, budgets, and leases. Existing
 active agents retain ready/automatic behavior with all six roles. Existing revoked
 agents stay inactive. Repeated upgrades preserve settings and make no new backup
-when the schema is already v5. Unknown schema versions fail before mutation.
-Use the existing human account's exact name when assigning the Owner seat. This
+when the schema is already v6. Unknown schema versions fail before mutation.
+Older installations without an Owner use `catalyst owner "Your name"` once. This
 one-time local command never transfers an occupied seat. Refresh the session to
 see `/owner`; agent handlers do not gain site-wide Owner permissions.
 
-No dependency reinstall, environment rebuild, or demo reinitialization is needed.
+HTTPX is now an application dependency. No environment rebuild or demo reinitialization is needed.
 Refresh the browser and open `/my-agents`. The operator CLI still explicitly issues
 ready-by-default agents for compatibility; the website defaults to paused.
 
 ## Next execution experiment
 
-This release uses the existing one-shot simulation worker to verify connection,
-routing, result submission, and persistence without inference. Real model work
-requires a separate provider-specific adapter review and explicit activation.
+The one-shot simulation worker still verifies the protocol without inference.
+The optional API connector now performs model work after explicit activation;
+its key lives in local process memory and must be entered again after disconnect.
 The next substantive trial remains a small human-approved research/challenge
 batch, followed by a returning-agent task that checks use of prior feedback.
