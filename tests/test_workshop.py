@@ -131,7 +131,7 @@ def test_filters_combine_and_reject_unknown_values(site):
     ids = {}
     for kind in ["reflection", "catalyst", "claim"]:
         for origin in ["human", "ai"]:
-            ids[kind, origin] = client.post("/api/ideas", json={"kind": kind, "title": f"{kind} {origin} thought",
+            ids[kind, origin] = client.post("/api/ideas", json={'admission_reason': 'Synthetic Owner admission', "kind": kind, "title": f"{kind} {origin} thought",
                 "origin": "Synthetic origin", "origin_kind": origin, "synthesis": {"summary": "Synthetic summary"}}).json()["id"]
     text = client.get("/?kind=catalyst&origin=ai&q=thought&sort=oldest").text
     for key, ident in ids.items():
@@ -260,7 +260,7 @@ def test_v1_backup_upgrade_preserves_records_and_is_idempotent(tmp_path):
         initialize(str(db))
     assert upgrade(db) is None
     with connect(str(db)) as con:
-        assert con.execute("SELECT version FROM schema_version").fetchone()[0] == 4
+        assert con.execute("SELECT version FROM schema_version").fetchone()[0] == 5
         assert con.execute("SELECT origin FROM ideas").fetchone()[0] == "Original text"
         assert con.execute("SELECT digest FROM credentials").fetchone()[0] == "old-digest"
         assert con.execute("SELECT question FROM tasks").fetchone()[0] == "Existing queue"

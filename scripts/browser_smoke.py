@@ -19,6 +19,7 @@ sys.path.insert(0, str(ROOT))
 import httpx
 from catalyst.db import initialize, issue_agent, issue_human
 from catalyst.cli import seed
+from catalyst.governance import bootstrap_owner
 
 
 def main():
@@ -36,6 +37,7 @@ def main():
         db = str(Path(tmp) / "smoke.db")
         initialize(db); seed(db)
         invitation = issue_human(db, "Example reviewer", reviewer=True)
+        bootstrap_owner(db, 'Example reviewer')
         with socket.socket() as sock:
             sock.bind(("127.0.0.1", 0)); port = sock.getsockname()[1]
         base = f"http://127.0.0.1:{port}"
@@ -115,24 +117,28 @@ def main():
                     page.get_by_role('link', name='My questions', exact=True).first.click()
                     page.get_by_role('link', name='How might we reduce hidden coordination work?', exact=True).click()
                     expect(page.get_by_role('heading', name='Awaiting review', exact=True)).to_be_visible()
+                    page.get_by_role('link', name='Open administration review', exact=True).click()
                     page.get_by_role('combobox', name='Review decision', exact=True).select_option('needs-clarification')
                     page.get_by_label('Reviewer explanation', exact=True).fill('Which recurring task should we begin with?')
                     page.get_by_role('button', name='Record review decision', exact=True).click()
-                    expect(page.get_by_role('heading', name='Needs clarification', exact=True)).to_be_visible()
+                    expect(page.locator('.hero .eyebrow')).to_contain_text('Needs clarification')
+                    page.get_by_role('link', name='Public question and responses', exact=True).click()
                     page.get_by_label('Clarification', exact=True).fill('Begin with the shared equipment rota.')
                     page.get_by_role('button', name='Add clarification', exact=True).click()
                     expect(page.locator('#review-trail')).to_contain_text('Begin with the shared equipment rota.')
+                    page.get_by_role('link', name='Open administration review', exact=True).click()
                     page.get_by_role('combobox', name='Review decision', exact=True).select_option('awaiting-review')
                     page.get_by_label('Reviewer explanation', exact=True).fill('The scope is now clear enough to develop.')
                     page.get_by_role('button', name='Record review decision', exact=True).click()
-                    expect(page.get_by_role('heading', name='Awaiting review', exact=True)).to_be_visible()
+                    expect(page.locator('.hero .eyebrow')).to_contain_text('Awaiting review')
                     if args.screenshots: page.screenshot(path=str(args.screenshots/'question-review.png'), full_page=True)
+                    page.get_by_role('link', name='Public question and responses', exact=True).click()
                     page.get_by_role("button", name="I want this explored", exact=True).click()
                     expect(page.get_by_role("button", name="Withdraw my exploration interest", exact=True)).to_be_visible()
-                    page.locator("summary", has_text="Develop into a Living Idea").click()
+                    page.get_by_role('link', name='Open administration review', exact=True).click()
                     page.get_by_label("Initial synthesis", exact=True).fill("Synthetic initial formulation for testing a human-directed work cycle.")
-                    page.get_by_label("Why develop this question?", exact=True).fill("Verify a complete loop without calling an inference provider.")
-                    page.get_by_role("button", name="Create linked idea", exact=True).click()
+                    page.get_by_label("Why use the Owner override?", exact=True).fill("Verify a complete loop without calling an inference provider.")
+                    page.get_by_role("button", name="Approve as Living Idea", exact=True).click()
                     page.wait_for_url("**/ideas/*?view=investigations")
                     idea_url = page.url
                     page.get_by_label("What would help this idea most?", exact=True).fill("Which hidden obligation should we examine first?")
@@ -162,18 +168,24 @@ def main():
                     assert "SIMULATION ONLY" in page.inner_text("main")
                     from agent_browser_smoke import check_my_agents
                     check_my_agents(page, base, ROOT, env, args.screenshots)
+                    from governance_browser_smoke import check_governance
+                    check_governance(page, browser, base, db, equipment_url, args.screenshots)
                     assert errors == [], errors
                     report = {"status": "passed", "browser": browser.version, "javascript_errors": errors,
                         "checks": ["native invitation login", "distinct type colors and serif headings", "type filtering",
                                    "single visible panel", "tab keyboard navigation", "Back history and unsent form preservation",
                                    "reduced motion", "no-JavaScript deep links", "20 topics and six roles",
-                                   "390px layout without page overflow", "human question and support", "reviewer development",
+                                   "390px layout without page overflow", "human question and support", "Owner admission",
                                    "role-specific task creation", "budget controls", "mock worker round-trip", "review and agent history",
                                    "agent registration and pause/resume", "idea typeahead and topic queue", "queue-only routing",
                                    "portable export", "credential rotation", "agent retirement",
                                    "question receipt and My questions", "clarification and review history",
                                    "live worker stages and response excerpts", "simulation labeling",
-                                   "live completion without form reset", "activity reduced motion"]}
+                                   "live completion without form reset", "activity reduced motion",
+                                   "Owner console and User/Admin changes", "Admin promotion without admission",
+                                   "public Owner override provenance", "demotion in an existing session",
+                                   "handler opt-in to agent questions", "agent-question cooldown",
+                                   "human response and Admin resolution", "mobile administration and intake"]}
                     print(json.dumps(report, indent=2))
                     browser.close()
             finally:

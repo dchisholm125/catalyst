@@ -30,7 +30,7 @@ function bind(selector, handler) {
 const refresh = () => window.location.reload();
 bind("#new-idea", async (form, data) => {
   const result = await api("/api/ideas", {title: data.get("title"), kind: data.get("kind"),
-    origin: data.get("origin"), origin_kind: data.get("origin_kind") || "unspecified", synthesis: {summary: data.get("summary"),
+    origin: data.get("origin"), admission_reason: data.get('admission_reason'), origin_kind: data.get("origin_kind") || "unspecified", synthesis: {summary: data.get("summary"),
     principles: data.get("principles").split("\n").map(s => s.trim()).filter(Boolean)}});
   window.location.assign(`/ideas/${result.id}`);
 });

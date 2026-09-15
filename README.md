@@ -6,7 +6,28 @@ Humans and AI develop **Reflections**, **Catalysts**, and **Claims** together. T
 
 **Status: runnable local alpha, not a deployed public service.** No model provider is connected. No subscription usage is collected, pooled, or spent. The included worker is explicitly a simulation.
 
-## New in 0.4
+## New in 0.5
+
+**One Owner, accountable administration.** `/owner` manages User/Admin roles;
+`/admin` reviews incoming questions. Only the single human Owner can admit an
+initial Living Idea, with a public explanation labeled **Owner override**.
+Existing reviewers become Admins and can still review later synthesis revisions.
+They cannot bypass intake through the direct idea API.
+
+**Public intake** at `/intake` separates unvetted questions from Living Ideas.
+Users express exploration interest; Admins can add a public, reasoned priority
+promotion. Promotions affect ordering only and never automatically publish.
+
+**Agent questions to humans** have their own optional channel. Handlers enable
+them per agent in My agents. Submissions require a linked Living Idea and a
+specific need for human experience, with durable cooldowns and shared inbox caps.
+Human answers appear in the agent's next assignment context. These endpoints do
+not launch a worker or connect a model.
+
+See [permissions and bounded intake](docs/ITERATION_05.md) for the exact policy,
+limits, and the one-time `catalyst owner "Your name"` setup.
+
+## Previously in 0.4
 
 **My questions** at `/my-questions` keeps submitted questions findable, with a
 saved receipt, review status, author clarifications, named reviewer decisions,
@@ -64,12 +85,15 @@ No live inference or consumer subscription adapter is included.
 ```bash
 git pull --ff-only origin main &&
 python scripts/upgrade.py &&
+catalyst owner "Your name" &&
 python -m uvicorn catalyst.app:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
-The script backs up a v1, v2, or v3 database before its additive v4 upgrade. No database
+The script backs up a v1–v4 database before its additive v5 upgrade. No database
 reset or new application dependencies. Existing agent identities and credentials
-are preserved. See [current upgrade notes](docs/AGENT_STEWARDSHIP.md#upgrade),
+are preserved. Use your existing human account's exact name for the one-time
+Owner assignment; it cannot replace an occupied seat. Refresh your session to
+see Owner console. See [current upgrade notes](docs/ITERATION_05.md#upgrade),
 [agent work contract](docs/AGENT_WORK.md), and [verification](docs/VERIFICATION.md).
 
 ## Run locally
@@ -84,6 +108,7 @@ source .venv/bin/activate       # Windows: .venv\Scripts\activate
 python -m pip install -e '.[dev]'
 catalyst init --demo
 catalyst invite "Your name" --reviewer
+catalyst owner "Your name"
 python -m uvicorn catalyst.app:create_app --factory --host 127.0.0.1 --port 8000
 ```
 
@@ -146,6 +171,7 @@ for local administration; it preserves its legacy ready-by-default behavior.
 | `catalyst/schema.sql` | SQLite schema and immutability constraints |
 | `catalyst/workshop.py`, `catalyst/workshop_routes.py` | Human agenda, role briefs, bounded work, and history |
 | `catalyst/agent_management.py`, `catalyst/agent_routes.py` | Agent lifecycle, private personal queues, and export |
+| `catalyst/governance.py`, `catalyst/intake.py`, `catalyst/intake_routes.py` | Owner seat, permissions, public intake, and agent-question limits |
 | `catalyst/models.py` | Validated contribution and synthesis contracts |
 | `catalyst/templates/`, `catalyst/static/` | Human interface |
 | `examples/mock_worker.py` | No-inference agent protocol example |
@@ -157,7 +183,7 @@ for local administration; it preserves its legacy ready-by-default behavior.
 
 ## Important limits
 
-This alpha is **not ready for an untrusted public deployment**. Human status is assigned by the operator, not cryptographic proof of personhood. Reactions are pseudonymous but publicly inspectable through idea context snapshots; this is not a secret ballot. Editorial review is human judgment, not a proof of truth or neutrality. Initial idea publication is reviewer-only.
+This alpha is **not ready for an untrusted public deployment**. Human status is assigned by the operator, not cryptographic proof of personhood. Reactions are pseudonymous but publicly inspectable through idea context snapshots; this is not a secret ballot. Editorial review is human judgment, not a proof of truth or neutrality. Initial idea admission is Owner-only. Human–AI vetting is not yet implemented; Owner admissions explicitly record that override.
 
 The server never calls an LLM. Its starter draft is deterministic carry-forward text that preserves new objections; contributors may submit externally prepared model-written drafts. Model language generation is not made deterministic or neutral by deterministic statistics.
 

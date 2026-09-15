@@ -182,3 +182,74 @@ CREATE TABLE IF NOT EXISTS task_progress (
  excerpt TEXT NOT NULL DEFAULT '', started REAL NOT NULL, updated REAL NOT NULL,
  PRIMARY KEY(task_id,attempt)
 );
+
+-- Version 5: one human Owner seat, human roles, and separate agent intake.
+CREATE TABLE IF NOT EXISTS human_roles (
+ actor_id TEXT PRIMARY KEY REFERENCES actors(id),
+ role TEXT NOT NULL DEFAULT 'user' CHECK(role IN ('user','admin')),
+ version INTEGER NOT NULL DEFAULT 1
+);
+CREATE TABLE IF NOT EXISTS owner_seat (
+ seat INTEGER PRIMARY KEY CHECK(seat=1), actor_id TEXT NOT NULL UNIQUE REFERENCES actors(id),
+ assigned REAL NOT NULL
+);
+CREATE TRIGGER IF NOT EXISTS owner_must_be_human BEFORE INSERT ON owner_seat
+WHEN NOT EXISTS (SELECT 1 FROM actors WHERE id=NEW.actor_id AND kind='human' AND active=1)
+BEGIN SELECT RAISE(ABORT, 'The Owner seat requires an active human'); END;
+CREATE TRIGGER IF NOT EXISTS owner_seat_fixed BEFORE UPDATE ON owner_seat
+BEGIN SELECT RAISE(ABORT, 'Owner transfer requires a future explicit governance procedure'); END;
+CREATE TRIGGER IF NOT EXISTS owner_cannot_be_revoked BEFORE UPDATE OF active,kind ON actors
+WHEN EXISTS (SELECT 1 FROM owner_seat WHERE actor_id=OLD.id) AND (NEW.active!=1 OR NEW.kind!='human')
+BEGIN SELECT RAISE(ABORT, 'The occupied Owner seat must remain an active human'); END;
+CREATE TABLE IF NOT EXISTS governance_events (
+ id TEXT PRIMARY KEY, actor_id TEXT REFERENCES actors(id), target_id TEXT REFERENCES actors(id),
+ action TEXT NOT NULL, reason TEXT NOT NULL, created REAL NOT NULL
+);
+CREATE TABLE IF NOT EXISTS intake_promotions (
+ channel TEXT NOT NULL CHECK(channel IN ('human','agent')), question_id TEXT NOT NULL,
+ actor_id TEXT NOT NULL REFERENCES actors(id), reason TEXT NOT NULL, created REAL NOT NULL,
+ PRIMARY KEY(channel,question_id,actor_id)
+);
+CREATE TABLE IF NOT EXISTS intake_promotion_events (
+ id TEXT PRIMARY KEY, channel TEXT NOT NULL, question_id TEXT NOT NULL,
+ actor_id TEXT NOT NULL REFERENCES actors(id), promoted INTEGER NOT NULL, reason TEXT NOT NULL, created REAL NOT NULL
+);
+CREATE TABLE IF NOT EXISTS idea_admissions (
+ idea_id TEXT PRIMARY KEY REFERENCES ideas(id), channel TEXT NOT NULL,
+ question_id TEXT, owner_id TEXT NOT NULL REFERENCES actors(id), reason TEXT NOT NULL, created REAL NOT NULL
+);
+CREATE TABLE IF NOT EXISTS agent_question_policy (
+ agent_id TEXT PRIMARY KEY REFERENCES actors(id), enabled INTEGER NOT NULL DEFAULT 0 CHECK(enabled IN (0,1))
+);
+CREATE TABLE IF NOT EXISTS agent_questions (
+ id TEXT PRIMARY KEY, agent_id TEXT NOT NULL REFERENCES actors(id), handler_id TEXT NOT NULL REFERENCES actors(id),
+ topic_id TEXT NOT NULL REFERENCES agenda_topics(id), context_idea_id TEXT NOT NULL REFERENCES ideas(id),
+ title TEXT NOT NULL, body TEXT NOT NULL, human_input TEXT NOT NULL, created REAL NOT NULL,
+ request_key TEXT NOT NULL, request_hash TEXT NOT NULL, idea_id TEXT UNIQUE REFERENCES ideas(id),
+ status TEXT NOT NULL DEFAULT 'awaiting-review' CHECK(status IN ('awaiting-review','needs-clarification','declined','developed','answered')),
+ UNIQUE(agent_id,request_key)
+);
+CREATE INDEX IF NOT EXISTS agent_question_limits ON agent_questions(handler_id,created);
+CREATE TABLE IF NOT EXISTS agent_question_events (
+ id TEXT PRIMARY KEY, question_id TEXT NOT NULL REFERENCES agent_questions(id), actor_id TEXT NOT NULL REFERENCES actors(id),
+ decision TEXT NOT NULL, body TEXT NOT NULL, created REAL NOT NULL
+);
+CREATE TABLE IF NOT EXISTS agent_question_support (
+ question_id TEXT NOT NULL REFERENCES agent_questions(id), actor_id TEXT NOT NULL REFERENCES actors(id),
+ created REAL NOT NULL, PRIMARY KEY(question_id,actor_id)
+);
+CREATE TABLE IF NOT EXISTS agent_question_answers (
+ id TEXT PRIMARY KEY, question_id TEXT NOT NULL REFERENCES agent_questions(id),
+ actor_id TEXT NOT NULL REFERENCES actors(id), body TEXT NOT NULL, created REAL NOT NULL
+);
+CREATE TRIGGER IF NOT EXISTS agent_support_human_only BEFORE INSERT ON agent_question_support
+WHEN (SELECT kind FROM actors WHERE id=NEW.actor_id)!='human'
+BEGIN SELECT RAISE(ABORT, 'Only humans can promote questions'); END;
+CREATE TRIGGER IF NOT EXISTS agent_answer_human_only BEFORE INSERT ON agent_question_answers
+WHEN (SELECT kind FROM actors WHERE id=NEW.actor_id)!='human'
+BEGIN SELECT RAISE(ABORT, 'This channel requests human experience'); END;
+CREATE TRIGGER IF NOT EXISTS agent_question_origin_immutable BEFORE UPDATE OF id,agent_id,handler_id,topic_id,context_idea_id,title,body,human_input,created,request_key,request_hash ON agent_questions
+BEGIN SELECT RAISE(ABORT, 'Preserve the original agent question'); END;
+CREATE TRIGGER IF NOT EXISTS roles_human_only BEFORE INSERT ON human_roles
+WHEN (SELECT kind FROM actors WHERE id=NEW.actor_id)!='human'
+BEGIN SELECT RAISE(ABORT, 'Only human accounts receive User or Admin roles'); END;

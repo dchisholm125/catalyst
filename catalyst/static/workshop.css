@@ -18,3 +18,6 @@ nav,.eyebrow,.small,.muted.small,.alpha,.identity,label,button,input,select,text
 .activity-panel[data-state="working"] .activity-dot { background: #267264; animation: activity-pulse 1.5s ease-in-out infinite; }
 @keyframes activity-pulse { 50% { opacity: .25; } }
 @media (prefers-reduced-motion: reduce) { .activity-dot { animation: none !important; } }
+.table-scroll { overflow-x: auto; }
+.table-scroll table { border-collapse: collapse; width: 100%; }
+.table-scroll th, .table-scroll td { padding: 12px; text-align: left; border-bottom: 1px solid var(--line); }

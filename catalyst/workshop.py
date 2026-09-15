@@ -81,17 +81,18 @@ def submit_signal(con, data, actor):
 
 
 def develop_signal(con, signal_id, data, actor):
+    from . import governance
+    governance.require(con, actor, 'owner')
     signal = get_signal(con, signal_id)
     if signal["idea_id"]:
         raise HTTPException(409, "This question already has a Living Idea; develop that instead")
-    if signal['review_status'] in ('declined', 'needs-clarification'):
-        raise HTTPException(409, 'Record a return to review before developing this question')
     origin = f'Human agenda question from {signal["name"]}: {signal["title"]}\n\n{signal["body"]}'
     if signal["assistance"]:
         origin += f'\n\nDeclared assistance: {signal["assistance"]}'
     idea_id = domain.create_idea(con, IdeaInput(title=signal["title"], kind=data.kind, origin=origin,
         origin_kind=signal["origin_kind"], synthesis={"summary": data.summary}), actor["id"])
     con.execute("INSERT INTO signal_links VALUES (?,?,?,?,?)", (signal_id, idea_id, actor["id"], data.reason, time.time()))
+    governance.admission(con, idea_id, actor, data.reason, 'human', signal_id)
     return idea_id
 
 
@@ -100,8 +101,9 @@ def queue_task(con, idea_id, data, actor):
     link = con.execute("SELECT signal_id FROM signal_links WHERE idea_id=?", (idea_id,)).fetchone()
     if data.tier == 1 and not link:
         raise HTTPException(422, "Human-agenda priority requires an idea linked to an agenda question")
-    if data.tier == 3 and not actor["reviewer"]:
-        raise HTTPException(403, "Exploratory work requires a human reviewer")
+    if data.tier == 3:
+        from .governance import require
+        require(con, actor)
     outstanding = con.execute("SELECT count(*) FROM tasks WHERE idea_id=? AND status IN ('queued','leased')", (idea_id,)).fetchone()[0]
     if outstanding >= 10:
         raise HTTPException(409, "Alpha limit: ten outstanding investigations per idea")
@@ -153,6 +155,7 @@ def work_history(con, agent_id, limit=5):
 
 
 def enrich_job(con, job, actor):
+    from .intake import agent_history
     brief = con.execute("SELECT * FROM task_briefs WHERE task_id=?", (job["task_id"],)).fetchone()
     role = brief["role"] if brief else "researcher"
     agenda = get_signal(con, brief["signal_id"]) if brief and brief["signal_id"] else None
@@ -164,10 +167,11 @@ def enrich_job(con, job, actor):
     job.update({"idea": {"id": current["id"], "title": current["title"], "kind": current["kind"],
                          "origin": current["origin"], "origin_kind": origin[0] if origin else "unspecified"},
                 "requested_head_id": brief["requested_head_id"] if brief else current["head_id"],
-                "contract_version": "0.4", "role": role, "role_purpose": ROLES[role][1],
+                "contract_version": "0.5", "role": role, "role_purpose": ROLES[role][1],
                 "success_criteria": brief["success_criteria"] if brief else ROLES[role][2],
                 "tier": brief["tier"] if brief else 2, "human_agenda": agenda,
                 "agent_history": work_history(con, actor["id"]),
+                'questions_to_humans': agent_history(con, actor['id']),
                 "finish_rule": "Return one bounded contribution, including limits or blockers. Do not create follow-up tasks or publish HEAD."})
     # Store the inputs for this attempt, never the lease token or a provider secret.
     snapshot = {k: v for k, v in job.items() if k != "lease_token"}
@@ -177,6 +181,8 @@ def enrich_job(con, job, actor):
 
 
 def review_task(con, task_id, data, actor):
+    from .governance import require
+    require(con, actor)
     task = domain.require(con.execute("SELECT * FROM tasks WHERE id=?", (task_id,)).fetchone())
     if task["status"] != "completed":
         raise HTTPException(409, "Only completed work can be reviewed")

@@ -16,7 +16,7 @@ bind("#register-agent", async (form, data) => {
   action(".queue-action", async button => { await api(`${base}/queue/${button.dataset.entry}`, {action: button.dataset.action}); refresh(); });
   bind("#agent-settings", async (form, data) => {
     if (!data.getAll("roles").length) throw new Error("Choose at least one permitted role.");
-    await api(base, {purpose: data.get("purpose"), mode: data.get("mode"), roles: data.getAll("roles"), version: Number(form.dataset.version)}, "PUT");
+    await api(base, {purpose: data.get("purpose"), mode: data.get("mode"), roles: data.getAll("roles"), version: Number(form.dataset.version), allow_questions: data.has('allow_questions')}, "PUT");
     refresh();
   });
   action("#rotate-agent-token", async button => {

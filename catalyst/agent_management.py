@@ -11,7 +11,7 @@ from .db import canonical, digest, uid
 def owned(con, agent_id, owner):
     # Re-check ownership inside the transaction, including the human's status.
     return domain.require(con.execute(
-        "SELECT a.id,a.name,a.owner_id,a.active,p.* FROM actors a "
+        "SELECT a.id,a.name,a.owner_id,a.active,p.*,COALESCE((SELECT enabled FROM agent_question_policy WHERE agent_id=a.id),0) AS allow_questions FROM actors a "
         "JOIN agent_profiles p ON p.agent_id=a.id JOIN actors h ON h.id=a.owner_id "
         "WHERE a.id=? AND a.kind='agent' AND a.owner_id=? AND h.active=1 AND h.kind='human'",
         (agent_id, owner['id'])).fetchone(), 'Agent not found in your account')
@@ -49,12 +49,13 @@ def settings(con, agent_id, owner, data):
     if row['version'] != data.version:
         raise HTTPException(409, 'Agent settings changed. Reload before saving.')
     roles = sorted(set(data.roles))
-    if (row['purpose'], row['mode'], sorted(json.loads(row['roles']))) == (data.purpose, data.mode, roles):
+    if (row['purpose'], row['mode'], sorted(json.loads(row['roles'])), bool(row['allow_questions'])) == (data.purpose, data.mode, roles, data.allow_questions):
         return
     release(con, agent_id)
     con.execute('UPDATE agent_profiles SET purpose=?,mode=?,roles=?,version=version+1,updated=? WHERE agent_id=?',
                 (data.purpose, data.mode, canonical(roles), time.time(), agent_id))
-    event(con, agent_id, 'settings', {'purpose': data.purpose, 'mode': data.mode, 'roles': roles, 'version': row['version']+1})
+    con.execute('INSERT INTO agent_question_policy VALUES (?,?) ON CONFLICT(agent_id) DO UPDATE SET enabled=excluded.enabled', (agent_id, int(data.allow_questions)))
+    event(con, agent_id, 'settings', {'purpose': data.purpose, 'mode': data.mode, 'roles': roles, 'allow_questions': data.allow_questions, 'version': row['version']+1})
 
 
 def lifecycle(con, agent_id, owner, action):
@@ -212,6 +213,8 @@ def detail(con, agent_id, owner):
     row['roles'] = json.loads(row['roles'])
     row['queue'] = queue_items(con, agent_id)
     row['history'] = workshop.work_history(con, agent_id, 50)
+    from .intake import agent_history
+    row['questions_to_humans'] = agent_history(con, agent_id)
     row['credential_expires'] = con.execute("SELECT max(expires) FROM credentials WHERE actor_id=? AND kind='agent'", (agent_id,)).fetchone()[0]
     row['running'] = [dict(r) for r in con.execute("SELECT id,idea_id,question,lease_until FROM tasks WHERE agent_id=? AND status='leased' AND lease_until>?", (agent_id, time.time()))]
     return row
@@ -220,7 +223,7 @@ def detail(con, agent_id, owner):
 def export_record(con, agent_id, owner):
     row = owned(con, agent_id, owner)
     # Explicit field selection prevents accidental credential/lease disclosure.
-    identity = {k: row[k] for k in ('id', 'name', 'owner_id', 'purpose', 'mode', 'status', 'version', 'created', 'updated')}
+    identity = {k: row[k] for k in ('id', 'name', 'owner_id', 'purpose', 'mode', 'status', 'version', 'created', 'updated', 'allow_questions')}
     identity['roles'] = json.loads(row['roles'])
     events = [dict(r) for r in con.execute('SELECT event,body,created FROM agent_events WHERE agent_id=? ORDER BY created,id', (agent_id,))]
     for item in events:
@@ -229,6 +232,7 @@ def export_record(con, agent_id, owner):
             'agent': identity, 'configuration_history': events,
             'queue': [{k: v for k, v in item.items() if k not in ('request_key', 'request_hash')} for item in queue_items(con, agent_id)],
             'contributions': [dict(r) for r in con.execute('SELECT * FROM contributions WHERE actor_id=? ORDER BY created,id', (agent_id,))],
+            'questions_to_humans': [dict(r) for r in con.execute('SELECT id,title,body,human_input,context_idea_id,topic_id,status,idea_id,created FROM agent_questions WHERE agent_id=? ORDER BY created,id', (agent_id,))],
             'drafts': [dict(r) for r in con.execute('SELECT * FROM revisions WHERE author_id=? ORDER BY created,id', (agent_id,))],
             'completed_work': [dict(r) for r in con.execute("SELECT t.id,t.idea_id,t.question,t.result_id,t.created,b.role,"
                 "r.verdict,r.reason AS review_reason,r.reviewer_id FROM tasks t LEFT JOIN task_briefs b ON b.task_id=t.id "

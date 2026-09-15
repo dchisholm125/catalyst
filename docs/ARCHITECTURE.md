@@ -1,9 +1,21 @@
-# Architecture 0.4
+# Architecture 0.5
+
+Version 0.5 adds a single human Owner seat, User/Admin permissions, public intake
+priority, and a separate bounded agent-question channel. Only the Owner admits
+initial Living Ideas. Every such admission records its source, Owner, timestamp,
+and public override rationale. Promotions and support never publish.
+
+Schema v5 uses companion tables and SQLite write transactions for role changes,
+admission, and durable question limits. Existing reviewer flags seed Admin roles
+once; neither migration nor an HTTP request assigns the Owner seat. The local
+operator explicitly assigns it to an existing active human. No transfer or AI
+occupancy is enabled. See [iteration 0.5](ITERATION_05.md).
 
 Version 0.4 adds question review history, author clarifications, retry receipts,
 and an owner-scoped paginated question list. Original wording is immutable.
-Development stays human-reviewer-only; declined or unclear questions must first
-return to review. AI pre-vetting is still a proposal.
+In 0.5, development requires an explicit Owner override; it can also override a
+decline or clarification request without erasing that decision. AI pre-vetting
+is still a proposal.
 
 Private activity uses one current connection row per agent and one progress row
 per task attempt. Reports revalidate credentials and leases inside the mutation
@@ -12,8 +24,9 @@ Server timestamps expire liveness after 90 seconds. Model labels and stages are
 worker assertions; accepted results are server-confirmed. Dashboards poll every
 five seconds and never manufacture an inference completion percentage.
 
-Schema v4 is additive. Upgrade backs up older versions and invents no historical
-worker check-ins or reviewer decisions. See [iteration 0.4](ITERATION_04.md).
+Upgrade backs up older versions and invents no historical worker check-ins,
+reviewer decisions, or admission records. See [iteration 0.4](ITERATION_04.md) for
+the earlier activity implementation.
 
 Status: implemented local alpha. The design favors a single understandable process
 over an ecosystem of services. FastAPI + Jinja templates + small browser JavaScript
@@ -76,6 +89,27 @@ receives a provider credential.
 A reviewer may publish their own draft in this single-maintainer alpha. This is
 recorded and disclosed, not claimed to be independent review. Public moderation,
 review quorum, delegation, and conflict-of-interest rules are deferred.
+
+The site-wide Owner is distinct from an agent's human handler (`owner_id` in the
+existing schema). Both Admin and Owner sessions retain reviewer powers for later
+HEAD revisions and task results. Only the Owner can assign User/Admin roles or
+create an initial idea through any web/API path. Role checks query current data
+on every request and revalidate privileged writes inside their transaction.
+Neither a stale session nor a repeated invitation restores a demoted Admin role.
+The database's sole seat accepts an active human, cannot be updated, and prevents
+revoking its occupant. Explicit local demo seeding remains separate, labeled
+operator activity; existing ideas are not retroactively assigned Owner approvals.
+
+Public intake defaults to human questions. Within each channel, an active Admin
+promotion sorts ahead of community interest, then older questions. Multiple
+Admin promotions never multiply priority. Demotion removes their priority effect
+while keeping public rationale history. Agent submissions never populate human
+agenda signals. They require per-agent handler opt-in, automatic mode, active
+permission and enabled positive task budget, an existing idea, and a question
+about missing human experience. Durable per-agent, per-handler, and global limits
+are independent of token rotation and process restarts. A human answer is public
+context; it neither schedules inference nor creates an idea. Recent questions
+and replies accompany the agent's next explicit assignment.
 
 ## Signals
 

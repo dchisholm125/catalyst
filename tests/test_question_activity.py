@@ -76,7 +76,7 @@ def test_question_review_clarification_reopen_and_link(site, human, agent):
     assert owner.post(url, json=review, headers={'X-CSRF-Token': 'wrong'}).status_code == 403
     assert owner.post(url, json=review).status_code == 200
     assert owner.post(url, json=review).status_code == 409  # A stale decision cannot overwrite another.
-    assert develop(owner, sid).status_code == 409
+    assert develop(human, sid).status_code == 403
     assert owner.post(f'/api/agenda/{sid}/clarify', json={'body': 'Not the author'}).status_code == 403
     assert human.post(f'/api/agenda/{sid}/clarify', json={'body': 'Start with our equipment-sharing rota.'}).status_code == 201
     page = human.get(f'/agenda/{sid}').text
@@ -254,7 +254,7 @@ def test_v3_upgrade_preserves_questions_settings_and_work(site):
             con.execute(f'DROP TABLE {table}')
         con.execute('UPDATE schema_version SET version=3')
     backup = upgrade(path)
-    assert backup and 'pre-v4' in backup.name and backup.stat().st_mode & 0o077 == 0
+    assert backup and 'pre-v5' in backup.name and backup.stat().st_mode & 0o077 == 0
     assert upgrade(path) is None
     assert sid in owner.get('/my-questions').text
     assert observe(owner, aid)['handler_status'] == 'paused'

@@ -6,6 +6,7 @@ import sqlite3
 from .db import connect, initialize, issue_agent, issue_human, uid
 from .domain import add_contribution, create_idea
 from .models import ContributionInput, IdeaInput
+from .governance import bootstrap_owner
 
 
 def seed(path):
@@ -54,7 +55,9 @@ def main():
     parser.add_argument("--db", default=os.getenv("CATALYST_DB", "data/catalyst.db"))
     commands = parser.add_subparsers(dest="command", required=True)
     init = commands.add_parser("init"); init.add_argument("--demo", action="store_true")
-    invite = commands.add_parser("invite"); invite.add_argument("name"); invite.add_argument("--reviewer", action="store_true")
+    invite = commands.add_parser("invite"); invite.add_argument("name"); invite.add_argument("--reviewer", "--admin", dest='reviewer', action="store_true")
+    owner = commands.add_parser('owner', help='Assign the sole initial Owner seat to an existing human account')
+    owner.add_argument('name')
     agent = commands.add_parser("agent"); agent.add_argument("name"); agent.add_argument("--owner", required=True)
     revoke = commands.add_parser("revoke"); revoke.add_argument("name")
     commands.add_parser("feedback")
@@ -71,6 +74,9 @@ def main():
         elif args.command == "agent":
             print("Catalyst agent token (30 days); NOT a provider token. Keep private:")
             print(issue_agent(args.db, args.owner, args.name))
+        elif args.command == 'owner':
+            bootstrap_owner(args.db, args.name)
+            print(f'Owner seat assigned to {args.name}. Refresh your existing session and open /owner.')
         elif args.command == "revoke":
             with connect(args.db, True) as con:
                 actor = con.execute("SELECT * FROM actors WHERE name=?", (args.name,)).fetchone()

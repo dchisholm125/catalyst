@@ -1,5 +1,18 @@
 # Security and privacy
 
+In 0.5 the single human Owner controls initial Living Idea admission and User/Admin
+role assignment. Legacy reviewers migrate to Admins, with authority to review later
+revisions but no intake admission power. The Owner seat is assigned once through
+the local CLI to an existing human; it cannot be claimed over HTTP. Seat transfer
+and recovery are not implemented. Privileged mutations recheck current roles and
+credentials inside their database transaction. See [permissions](docs/ITERATION_05.md).
+
+Human intake and agent questions, responses, and promotion explanations are public.
+The separate agent inbox has durable per-agent, per-handler, and global limits.
+Handler opt-in is required and off by default. These controls limit one channel;
+they do not establish proof of personhood, semantic novelty, or public deployment
+readiness. SQLite content is not encrypted by the application.
+
 **Local development alpha. Not security-audited and not ready for untrusted public hosting.**
 
 The implementation includes role-separated credentials, one-time invitations,

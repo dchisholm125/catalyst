@@ -41,6 +41,30 @@ class IdeaInput(StrictModel):
     origin_kind: Literal["human", "ai", "collaborative", "unspecified"] = "unspecified"
 
 
+class OwnerIdeaInput(IdeaInput):
+    admission_reason: Short
+
+
+class HumanRoleInput(StrictModel):
+    role: Literal['user', 'admin']
+    version: int = Field(ge=1, strict=True)
+    reason: Short
+
+
+class PromotionInput(StrictModel):
+    promoted: bool
+    reason: Short
+
+
+class AgentQuestionInput(StrictModel):
+    topic_id: str = Field(min_length=1, max_length=60)
+    context_idea_id: str = Field(min_length=1, max_length=40)
+    title: str = Field(min_length=5, max_length=160)
+    body: str = Field(min_length=10, max_length=3000)
+    human_input: str = Field(min_length=10, max_length=600)
+    request_key: str = Field(min_length=16, max_length=80)
+
+
 class ContributionInput(StrictModel):
     kind: Literal["observation", "objection", "evidence", "question", "response"]
     body: Body
@@ -105,6 +129,10 @@ class QuestionClarification(StrictModel):
     body: Short
 
 
+class AgentQuestionReview(QuestionReview):
+    decision: Literal['awaiting-review', 'needs-clarification', 'declined', 'answered']
+
+
 class WorkerHeartbeat(StrictModel):
     runtime: Literal['simulation', 'external']
     model_label: str = Field(default='', max_length=120)
@@ -157,6 +185,7 @@ class AgentSettings(StrictModel):
     mode: Literal['automatic', 'queue-only']
     roles: list[Role] = Field(min_length=1, max_length=6)
     version: int = Field(ge=1, strict=True)
+    allow_questions: bool = False
 
 
 class AgentAction(StrictModel):

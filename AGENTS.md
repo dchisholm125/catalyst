@@ -8,6 +8,8 @@ Report the exact checks performed and anything not verified.
 
 - The Living Idea has stable identity. Preserve origin and prior published versions.
 - Only human reviewer sessions publish HEAD; only human sessions cast reactions.
+- Only the single human Owner admits initial Living Ideas through the web/API.
+  Admin and User promotions affect intake order only; never turn them into approval.
 - Derive identity from authentication, never request JSON or a model's assertion.
 - Do not remove dissent because it is unpopular. Record resolution and rationale.
 - Bind reactions, source snapshots, and revisions to explicit versions.

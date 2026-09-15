@@ -16,10 +16,10 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from . import domain, workshop
+from . import domain, workshop, governance
 from .db import canonical, connect, digest, initialize, uid
 from .models import (BudgetInput, ContributionInput, DraftInput, FeedbackInput, IdeaInput,
-                     ReactionInput, ReasonInput, ResultInput, ReviewInput, TaskInput, ClaimInput)
+                     ReactionInput, ReasonInput, ResultInput, ReviewInput, TaskInput, ClaimInput, OwnerIdeaInput)
 
 ROOT = Path(__file__).parent
 
@@ -48,7 +48,7 @@ def create_app(settings: Settings | None = None):
         initialize(settings.database)
         yield
 
-    app = FastAPI(title="Catalyst", version="0.4.0", lifespan=lifespan,
+    app = FastAPI(title="Catalyst", version="0.5.0", lifespan=lifespan,
                   description="Human-directed living ideas. Consumer subscription integrations are not connected.")
     app.state.settings = settings
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=list(settings.allowed_hosts))
@@ -106,6 +106,8 @@ def create_app(settings: Settings | None = None):
             if not row:
                 return None
             actor = dict(row)
+            actor['role'] = governance.role(con, actor['id'])
+            actor['reviewer'] = int(actor['role'] in ('admin', 'owner'))
             actor['_credential_digest'] = digest(token)
             if bearer and actor["credential_kind"] != "agent":
                 return None
@@ -136,6 +138,11 @@ def create_app(settings: Settings | None = None):
             raise HTTPException(403, "Human reviewer permission required")
         return actor
 
+    def owner(actor=Depends(human)):
+        if actor['role'] != 'owner':
+            raise HTTPException(403, 'Owner human permission required')
+        return actor
+
     def agent(actor=Depends(authenticated)):
         if actor["kind"] != "agent":
             raise HTTPException(403, "Scoped agent credential required")
@@ -149,7 +156,7 @@ def create_app(settings: Settings | None = None):
     def health():
         with connect(settings.database) as con:
             con.execute("SELECT 1").fetchone()
-        return {"status": "ok", "version": "0.3.0", "provider_connected": False}
+        return {"status": "ok", "version": "0.5.0", "provider_connected": False}
 
     @app.get("/", response_class=HTMLResponse)
     def home(request: Request, q: str = "", kind: str = "", origin: str = "", sort: str = "newest"):
@@ -189,7 +196,8 @@ def create_app(settings: Settings | None = None):
             return page(request, "idea.html", idea=item, current=current, synthesis=json.loads(current["body"]),
                         ctx=ctx, metrics=domain.metrics(ctx), history=history, tasks=tasks,
                         draft_template=domain.draft_template(con, idea_id), cadence=settings.cadence_seconds, view=view,
-                        agenda_signal=agenda_link[0] if agenda_link else None)
+                        agenda_signal=agenda_link[0] if agenda_link else None,
+                        admission=governance.admission_record(con, idea_id))
 
     @app.get("/revisions/{revision_id}", response_class=HTMLResponse)
     def revision_page(request: Request, revision_id: str):
@@ -255,7 +263,7 @@ def create_app(settings: Settings | None = None):
 
     @app.get("/api/me")
     def me(actor=Depends(authenticated)):
-        return {k: actor[k] for k in ("id", "name", "kind", "reviewer", "owner_id", "csrf")}
+        return {k: actor[k] for k in ("id", "name", "kind", "role", "reviewer", "owner_id", "csrf")}
 
     @app.get("/api/ideas")
     def list_ideas(offset: int = 0, limit: int = 25):
@@ -264,9 +272,12 @@ def create_app(settings: Settings | None = None):
                                                 (max(1, min(limit, 100)), max(0, offset)))]
 
     @app.post("/api/ideas", status_code=201)
-    def new_idea(data: IdeaInput, actor=Depends(reviewer)):
+    def new_idea(data: OwnerIdeaInput, actor=Depends(owner)):
         with connect(settings.database, True) as con:
-            return {"id": domain.create_idea(con, data, actor["id"])}
+            governance.require(con, actor, 'owner')
+            idea_id = domain.create_idea(con, data, actor['id'])
+            governance.admission(con, idea_id, actor, data.admission_reason)
+            return {'id': idea_id}
 
     @app.get("/api/ideas/{idea_id}")
     def read_idea(idea_id: str):
@@ -274,7 +285,7 @@ def create_app(settings: Settings | None = None):
             item = domain.idea(con, idea_id)
             rev = dict(con.execute("SELECT * FROM revisions WHERE id=?", (item["head_id"],)).fetchone())
             ctx = domain.context(con, idea_id)
-            return {**item, "synthesis": json.loads(rev["body"]), "context": ctx,
+            return {**item, "synthesis": json.loads(rev["body"]), "context": ctx, 'admission': governance.admission_record(con, idea_id),
                     "metrics": domain.metrics(ctx), "draft_template": domain.draft_template(con, idea_id)}
 
     @app.post("/api/ideas/{idea_id}/contributions", status_code=201)
@@ -305,12 +316,14 @@ def create_app(settings: Settings | None = None):
     @app.post("/api/revisions/{revision_id}/review")
     def review(revision_id: str, data: ReviewInput, actor=Depends(reviewer)):
         with connect(settings.database, True) as con:
+            governance.require(con, actor)
             domain.review_draft(con, revision_id, data, actor["id"], settings.cadence_seconds)
             return {"status": "published" if data.decision == "publish" else "rejected"}
 
     @app.post("/api/contributions/{reply_id}/recognize")
     def recognize(reply_id: str, data: ReasonInput, actor=Depends(reviewer)):
         with connect(settings.database, True) as con:
+            governance.require(con, actor)
             domain.recognize_exchange(con, reply_id, actor["id"], data.reason)
             return {"recognized": True}
 
@@ -343,7 +356,7 @@ def create_app(settings: Settings | None = None):
     def cancel(task_id: str, actor=Depends(human)):
         with connect(settings.database, True) as con:
             row = domain.require(con.execute("SELECT * FROM tasks WHERE id=?", (task_id,)).fetchone())
-            if not actor["reviewer"] and row["creator_id"] != actor["id"]:
+            if governance.role(con, actor['id']) not in ('owner','admin') and row["creator_id"] != actor["id"]:
                 raise HTTPException(403, "Only the task requester or a reviewer can cancel it")
             if row["status"] == "completed":
                 raise HTTPException(409, "Completed work cannot be retroactively canceled")
@@ -362,11 +375,14 @@ def create_app(settings: Settings | None = None):
     @app.get("/api/feedback")
     def read_feedback(actor=Depends(reviewer)):
         with connect(settings.database) as con:
+            governance.require(con, actor)
             return [dict(r) for r in con.execute("SELECT f.*,a.kind AS actor_kind,a.name FROM feedback f "
                                                 "JOIN actors a ON a.id=f.actor_id ORDER BY created DESC LIMIT 100")]
 
     from .workshop_routes import install
-    install(app, settings, page, human, reviewer, agent)
+    install(app, settings, page, human, reviewer, agent, owner)
     from .agent_routes import install as install_agents
     install_agents(app, settings, page, human, agent)
+    from .intake_routes import install as install_intake
+    install_intake(app, settings, page, human, reviewer, owner, agent)
     return app

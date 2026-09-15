@@ -44,12 +44,13 @@ def initialize(path: str) -> None:
         # Fail before modifying an unknown future schema. Upgrade atomically.
         if con.execute("SELECT 1 FROM sqlite_master WHERE name='schema_version'").fetchone():
             versions = [r[0] for r in con.execute("SELECT version FROM schema_version")]
-            if versions not in ([1], [2], [3], [4]):
+            if versions not in ([1], [2], [3], [4], [5]):
                 raise RuntimeError("Unsupported database schema; back up before migrating")
         con.execute("PRAGMA journal_mode=WAL")
         con.execute("PRAGMA foreign_keys=ON")
         con.executescript("BEGIN IMMEDIATE;\n" + Path(__file__).with_name("schema.sql").read_text())
-        con.execute("UPDATE schema_version SET version=4 WHERE version IN (1,2,3)")
+        con.execute("UPDATE schema_version SET version=5 WHERE version IN (1,2,3,4)")
+        con.execute("INSERT OR IGNORE INTO human_roles(actor_id,role) SELECT id,CASE WHEN reviewer=1 THEN 'admin' ELSE 'user' END FROM actors WHERE kind='human'")
         from .workshop import TOPICS
         con.executemany("INSERT OR IGNORE INTO agenda_topics VALUES (?,?,?,?)",
                         [(slug, label, question, i) for i, (slug, label, question) in enumerate(TOPICS)])
@@ -79,6 +80,8 @@ def issue_human(path: str, name: str, reviewer: bool = False) -> str:
             con.execute("INSERT INTO budgets(owner_id) VALUES (?)", (actor_id,))
         elif reviewer:
             con.execute("UPDATE actors SET reviewer=1 WHERE id=?", (actor_id,))
+        con.execute("INSERT OR IGNORE INTO human_roles(actor_id,role) VALUES (?,?)", (actor_id, 'admin' if reviewer else 'user'))
+        # --reviewer is a legacy bootstrap alias, not a way to override Owner role decisions.
         con.execute("DELETE FROM credentials WHERE actor_id=? AND kind='invite'", (actor_id,))
         con.execute("INSERT INTO credentials(digest,actor_id,kind,expires) VALUES (?,?,'invite',?)",
                     (digest(token), actor_id, time.time() + 86400))

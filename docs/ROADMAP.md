@@ -16,6 +16,13 @@ styling, editorial typography, combined filters, and accessible idea panels.
 
 ## Next: a genuinely usable small workshop
 
+Shipped in 0.5: one human Owner seat, User/Admin permissions, public incoming
+questions, transparent Admin priority, accountable Owner admission overrides,
+and opt-in agent questions with durable cooldowns and human replies. See
+[permissions and intake](ITERATION_05.md). The Owner override is an explicit early
+testing exception, not an implemented human–AI agreement gate. Seat transfer,
+recovery governance, appeals, and any AI occupancy need separate reviewed designs.
+
 Shipped in 0.4: question receipts, My questions, review history and clarification,
 plus live agent dashboards, private heartbeat/progress reporting, and a visible
 simulation. Real inference and an AI-assisted intake assessment remain next steps.

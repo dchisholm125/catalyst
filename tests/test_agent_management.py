@@ -30,7 +30,7 @@ def state(owner, aid, action):
 
 def configure(owner, aid, **updates):
     old = details(owner, aid)
-    return owner.put(f'/api/me/agents/{aid}', json={k: updates.get(k, old[k]) for k in ('purpose', 'mode', 'roles', 'version')})
+    return owner.put(f'/api/me/agents/{aid}', json={k: updates.get(k, old[k]) for k in ('purpose', 'mode', 'roles', 'version', 'allow_questions')})
 
 
 def enable(owner):
@@ -60,7 +60,7 @@ def complete(client, job):
 
 
 def another_idea(owner):
-    return owner.post('/api/ideas', json={'title': 'Another Living Idea', 'kind': 'reflection', 'origin': 'Synthetic origin',
+    return owner.post('/api/ideas', json={'admission_reason': 'Synthetic Owner admission', 'title': 'Another Living Idea', 'kind': 'reflection', 'origin': 'Synthetic origin',
                                         'synthesis': {'summary': 'Synthetic summary.'}}).json()['id']
 
 
@@ -380,7 +380,7 @@ def test_v2_upgrade_preserves_credentials_ids_leases_and_old_behavior(tmp_path):
         assert con.execute('SELECT version FROM schema_version').fetchone()[0] == 2
     assert upgrade(path) is None
     with connect(str(path)) as con:
-        assert con.execute('SELECT version FROM schema_version').fetchone()[0] == 4
+        assert con.execute('SELECT version FROM schema_version').fetchone()[0] == 5
         assert con.execute('SELECT status FROM agent_profiles').fetchone()[0] == 'ready'
         assert con.execute('SELECT mode FROM agent_profiles').fetchone()[0] == 'automatic'
         assert con.execute('SELECT digest FROM credentials').fetchone()[0] == 'old-hash'

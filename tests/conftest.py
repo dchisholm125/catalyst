@@ -2,6 +2,7 @@ import pytest
 from fastapi.testclient import TestClient
 from catalyst.app import Settings, create_app
 from catalyst.db import issue_agent, issue_human
+from catalyst.governance import bootstrap_owner
 
 
 @pytest.fixture
@@ -10,6 +11,7 @@ def site(tmp_path):
     app = create_app(Settings(database=path, cadence_seconds=0, mutation_limit=10000))
     with TestClient(app) as client:
         invite = issue_human(path, "Reviewer", reviewer=True)
+        bootstrap_owner(path, 'Reviewer')
         assert client.post("/login", data={"token": invite}).status_code == 200
         client.headers["X-CSRF-Token"] = client.get("/api/me").json()["csrf"]
         yield client, path, app
@@ -35,7 +37,7 @@ def agent(site):
 @pytest.fixture
 def idea(site):
     client, _, _ = site
-    response = client.post("/api/ideas", json={"title": "Share equipment without hidden labor", "kind": "catalyst",
+    response = client.post("/api/ideas", json={'admission_reason': 'Synthetic Owner initialization for testing', "title": "Share equipment without hidden labor", "kind": "catalyst",
         "origin": "An initial question, preserved for posterity.", "synthesis": {
             "summary": "A neighborhood shares equipment with transparent access and explicit responsibilities.",
             "principles": ["Small inventory", "Clear availability", "Condition records", "Fair access", "Easy exit"]}})

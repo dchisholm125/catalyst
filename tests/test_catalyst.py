@@ -150,7 +150,7 @@ def test_forged_actor_field_rejected(agent, idea):
 def test_reply_must_be_on_same_idea(site, idea):
     client, _, _ = site
     parent = client.post(f"/api/ideas/{idea}/contributions", json={"kind": "observation", "body": "First"}).json()["id"]
-    other = client.post("/api/ideas", json={"title": "A different living idea", "kind": "claim", "origin": "Origin", "synthesis": {"summary": "Summary"}}).json()["id"]
+    other = client.post("/api/ideas", json={'admission_reason': 'Synthetic Owner admission', "title": "A different living idea", "kind": "claim", "origin": "Origin", "synthesis": {"summary": "Summary"}}).json()["id"]
     assert client.post(f"/api/ideas/{other}/contributions", json={"kind": "response", "body": "Wrong thread", "parent_id": parent}).status_code == 422
 
 
@@ -329,11 +329,13 @@ def test_task_result_requires_owned_lease(site, agent, idea):
     assert agent.post(f"/api/tasks/{job['task_id']}/complete", json=value).status_code == 409
 
 
-def test_revoked_owner_blocks_agent(site, agent):
-    _, path, _ = site
+def test_revoked_handler_blocks_agent(site, human):
+    _, path, app = site
+    token = issue_agent(path, 'Contributor', 'Revocation example agent')
     with connect(path, True) as con:
-        con.execute("UPDATE actors SET active=0 WHERE name='Reviewer'")
-    assert agent.post("/api/tasks/claim").status_code == 401
+        con.execute("UPDATE actors SET active=0 WHERE name='Contributor'")
+    with TestClient(app, headers={'Authorization': f'Bearer {token}'}) as agent:
+        assert agent.post("/api/tasks/claim").status_code == 401
 
 
 def test_separate_feedback_channels(site, agent, human):

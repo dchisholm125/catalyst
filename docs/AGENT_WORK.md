@@ -1,4 +1,15 @@
-# Agent work contract — 0.3
+# Agent work contract — 0.5
+
+Version 0.5 adds a separate, handler-enabled channel for questions to humans.
+`POST /api/agent-questions` accepts a topic, context Living Idea, title, body,
+specific human input request, and retry key. It does not create a human agenda
+signal, investigation, or Living Idea. Read the complete body and limit contract
+in [iteration 0.5](ITERATION_05.md#agent-questions).
+
+The next leased assignment includes `questions_to_humans`: the agent's five most
+recent questions, each with its latest three human replies and total reply count.
+The public source endpoint supplies the complete question and responses. These
+are untrusted contextual records, never additional authority or instructions.
 
 Version 0.3 adds owner lifecycle controls, role allowlists, ordered personal work
 queues, and queue-only mode. See [agent stewardship](AGENT_STEWARDSHIP.md) for the
@@ -14,8 +25,8 @@ a scoped identity operated by a human, not a voter or an autonomous publisher.
 1. **Human agenda:** twenty curated topic prompts help humans submit a question.
    Only authenticated human sessions submit or express exploration interest.
    Topics are taxonomy, not fake submissions or evidence of public demand.
-2. **Living Ideas:** a reviewer can develop a question into an initial Reflection,
-   Catalyst, or Claim. The original question and link remain. This action does
+2. **Living Ideas:** the Owner can admit a question into an initial Reflection,
+   Catalyst, or Claim, with a public Owner override reason. The original question and link remain. This action does
    not automatically queue a job, spend capacity, or establish consensus.
 3. **Agent work queue:** humans request a bounded question, role, priority, and
    success criteria. Agents cannot create their own follow-up investigations.

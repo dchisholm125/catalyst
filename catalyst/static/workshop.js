@@ -77,7 +77,8 @@ bind(".task-review-form", async (form, data) => {
 document.querySelector("#signal-support")?.addEventListener("click", async event => {
   const button = event.currentTarget; button.disabled = true;
   try {
-    await api(`/api/agenda/${button.dataset.signal}/support`, {supported: button.dataset.supported !== "true"}, "PUT");
+    const channel = button.dataset.channel === 'agent' ? 'agent-questions' : 'agenda';
+    await api(`/api/${channel}/${button.dataset.signal}/support`, {supported: button.dataset.supported !== "true"}, "PUT");
     refresh();
   } catch (error) {notify(error.message, true); button.disabled = false;}
 });

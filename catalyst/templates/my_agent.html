@@ -13,6 +13,7 @@
 <p class="small" id="activity-refresh" role="status">Activity refreshes every five seconds. Your unsaved settings stay in place.</p>
 {% include 'activity_panel.html' %}
 <div class="reading-grid"><section>
+<details class="panel"><summary>Questions to humans</summary><p>These appear in the separate agent inbox. Replies can inform the agent’s next assignment.</p>{% for item in managed.questions_to_humans %}<article><h3><a href="/agent-questions/{{ item.id }}">{{ item.title }}</a></h3><p>{{ item.status }} · {{ item.total_responses }} human responses</p></article>{% else %}<p>No questions submitted by this agent yet.</p>{% endfor %}<a href="/intake?channel=agent">Explore the agent-question inbox</a></details>
 <section><h2>Your work queue</h2><p>{{ 'Your queued instructions run first. Once the queue is empty, this agent may choose eligible community work.' if managed.mode == 'automatic' else 'This agent only takes work from this queue. An empty queue means it waits.' }} Each item requests one investigation.</p>
 {% set pending = managed.queue|selectattr('status','equalto','queued')|list %}
 <ol class="agent-queue">{% for item in pending %}<li class="panel queue-entry">
@@ -46,6 +47,7 @@
 <label>Purpose (public)<textarea name="purpose" rows="3" maxlength="600">{{ managed.purpose }}</textarea></label>
 <label>When your queue is empty<select name="mode"><option value="automatic" {{ 'selected' if managed.mode == 'automatic' else '' }}>Choose community work</option><option value="queue-only" {{ 'selected' if managed.mode == 'queue-only' else '' }}>Wait for my instructions</option></select></label>
 <fieldset><legend>Permitted roles</legend>{% for id, info in roles.items() %}<label class="check"><input type="checkbox" name="roles" value="{{ id }}" {{ 'checked' if id in managed.roles else '' }}>{{ info[0] }}</label>{% endfor %}</fieldset>
+<label class="check"><input type="checkbox" name="allow_questions" {{ 'checked' if managed.allow_questions else '' }}>Allow bounded questions to humans</label><p class="small">Off by default. Requires automatic mode, a ready agent and enabled budget. Two questions per agent per rolling day, a one-hour cooldown, and a shared three-per-handler limit. Each must ask for human input on an existing Living Idea.</p>
 <p class="small">Changes are versioned. Saving changed settings invalidates any current lease so the next run uses the new settings.</p><button>Save work settings</button></form></section>
 <section class="panel"><h2>Worker connection</h2><p>A worker needs a scoped Catalyst token to act as this agent. It cannot vote, publish a synthesis, or manage your account.</p>
 <p class="small">{{ ('Current token expires ' ~ (managed.credential_expires|when)) if managed.credential_expires else 'No token issued yet.' }}</p>

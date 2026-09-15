@@ -6,7 +6,7 @@ from . import workshop as w, questions
 from .models import SignalInput, SignalSupport, DevelopSignal, TaskReview, QuestionReview, QuestionClarification
 
 
-def install(app, settings, page, human, reviewer, agent):
+def install(app, settings, page, human, reviewer, agent, owner):
     @app.get('/my-questions', response_class=HTMLResponse)
     def my_questions(request: Request, offset: int = Query(default=0, ge=0), actor=Depends(human)):
         with connect(settings.database) as con:
@@ -28,10 +28,11 @@ def install(app, settings, page, human, reviewer, agent):
 
     @app.get("/agenda/{signal_id}", response_class=HTMLResponse)
     def signal_page(request: Request, signal_id: str):
+        from .intake import promotion_history
         with connect(settings.database) as con:
             signal = w.get_signal(con, signal_id)
             supporters = [r[0] for r in con.execute("SELECT actor_id FROM signal_support WHERE signal_id=?", (signal_id,))]
-            return page(request, "signal.html", signal=signal, supporters=supporters, review_history=questions.history(con, signal_id))
+            return page(request, "signal.html", signal=signal, supporters=supporters, review_history=questions.history(con, signal_id), promotions=promotion_history(con, 'human', signal_id))
 
     @app.get("/api/agenda")
     def agenda_data(topic: str = ""):
@@ -69,7 +70,7 @@ def install(app, settings, page, human, reviewer, agent):
             return {"supported": data.supported}
 
     @app.post("/api/agenda/{signal_id}/develop", status_code=201)
-    def develop(signal_id: str, data: DevelopSignal, actor=Depends(reviewer)):
+    def develop(signal_id: str, data: DevelopSignal, actor=Depends(owner)):
         with connect(settings.database, True) as con:
             return {"idea_id": w.develop_signal(con, signal_id, data, actor)}
 
@@ -79,7 +80,12 @@ def install(app, settings, page, human, reviewer, agent):
 
     @app.get("/api/agent-contract")
     def agent_contract():
-        return {"version": "0.4", "provider_connected": False,
+        return {"version": "0.5", "provider_connected": False,
+            'questions_to_humans': {'endpoint': '/api/agent-questions', 'requires_handler_opt_in': True,
+                'requires': 'Ready automatic-mode agent, enabled budget, existing Living Idea, and a reason human input is needed.',
+                'limits': {'agent_per_rolling_day': 2, 'handler_per_rolling_day': 3, 'cooldown_seconds': 3600,
+                           'open_per_agent': 2, 'open_per_handler': 5, 'open_globally': 30},
+                'notice': 'Separate optional inbox. No human impersonation, promotion, automatic model execution, or initial publication.'},
             'activity': {'heartbeat': '/api/agents/me/heartbeat', 'progress': '/api/tasks/{task_id}/progress',
                          'heartbeat_seconds': 30, 'stale_after_seconds': 90, 'excerpt_limit': 1200,
                          'notice': 'Report response excerpts only, never hidden reasoning or credentials. Progress cannot renew leases or publish work.'},

@@ -4,7 +4,7 @@ from fastapi import HTTPException
 from .db import uid
 
 LABELS = {'awaiting-review': 'Awaiting review', 'needs-clarification': 'Needs clarification',
-          'declined': 'Not developed', 'developed': 'Living Idea created'}
+          'declined': 'Not developed', 'developed': 'Living Idea created', 'answered': 'Human input received'}
 
 
 def annotate(con, signal):
@@ -28,6 +28,8 @@ def history(con, signal_id):
 
 
 def review(con, signal_id, data, actor):
+    from .governance import require
+    require(con, actor)
     from .workshop import get_signal
     signal = get_signal(con, signal_id)
     if signal['idea_id']:

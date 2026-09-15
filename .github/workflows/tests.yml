@@ -38,3 +38,4 @@ jobs:
       - run: python -m playwright install --with-deps chromium
       - run: python scripts/browser_smoke.py
       - run: node --check catalyst/static/site.js && node --check catalyst/static/workshop.js && node --check catalyst/static/agents.js && node --check catalyst/static/activity.js
+      - run: node --check catalyst/static/governance.js
