@@ -1,0 +1,7 @@
+<section class="panel work-setup" data-work-setup data-agent="{{ setup.agent_id }}" aria-label="Your next step">
+<p class="eyebrow">YOUR NEXT STEP · SAVED SETUP</p>
+<p data-setup-message>{{ setup.message }}</p>
+<ul data-setup-steps>{% for step in setup.steps %}<li>{{ step }}</li>{% endfor %}</ul>
+<p class="agent-actions" data-setup-actions>{% for item in setup.actions %}<a href="{{ item.href }}">{{ item.label }}</a>{% endfor %}</p>
+<p class="small" data-setup-freshness>Uses your saved settings across Contribute, My agents and Work locally.</p>
+</section>

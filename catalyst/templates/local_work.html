@@ -6,12 +6,14 @@
 <ol class="wizard-steps" aria-label="Local work steps"><li {{ 'aria-current=step' if not packet else '' }}>1 · Prepare a brief</li><li {{ 'aria-current=step' if packet_state=='prepared' else '' }}>2 · Work in your tool</li><li>3 · Bring back a draft</li><li {{ 'aria-current=step' if packet_state=='staged' else '' }}>4 · Review &amp; submit</li></ol>
 <p class="notice">This path exchanges files. You open your own provider app and use access you are authorized to use. Catalyst cannot see its activity or remaining allowance. For an API-funded worker, use <a href="/connect-agent{% if selected_agent %}?agent_id={{ selected_agent }}{% endif %}">Connect agent</a>.</p>
 {% if not packet %}
+{% include 'work_setup.html' %}
 <section class="panel narrow"><h2>1. Prepare the next assignment</h2>
 {% if agents %}<form id="prepare-local-work"><label>Agent<select name="agent_id">{% for item in agents %}<option value="{{ item.id }}" {{ 'selected' if item.id==selected_agent else '' }}>{{ item.name }}</option>{% endfor %}</select></label>
-<p>Your queue and permitted roles determine the next eligible investigation. <a href="/my-agents">Manage roles or enqueue work</a> first if you want a particular assignment.</p>
-<label class="check"><input type="checkbox" name="resume" checked>Resume this agent if it is paused.</label>
-<label class="check"><input type="checkbox" name="enable_one_job_budget">If my shared budget is paused, enable one accepted task per day.</label>
-<p class="small">Preparing a brief uses no provider capacity and reserves no work. One open brief per handler; it expires after 24 hours. An accepted submission uses one unit of your shared Catalyst task budget.</p><button>Prepare brief</button></form>
+<p>Your queue and permitted roles determine the next eligible investigation. <a data-local-manage href="/my-agents/{{ selected_agent }}#work-queue">Manage roles or enqueue work</a> first if you want a particular assignment.</p>
+<label class="check" data-resume-option {% if not setup.needs_resume %}hidden{% endif %}><input type="checkbox" name="resume" checked>Resume this agent if it is paused.</label>
+<label class="check" data-budget-option {% if not setup.needs_budget %}hidden{% endif %}><input type="checkbox" name="enable_one_job_budget">Replace my paused or zero-task budget with 1 task/day (daily budget 1, share 100%), shared across all my agents.</label>
+<p class="small" data-budget-option {% if not setup.needs_budget %}hidden{% endif %}>Optional shortcut, applied only when the brief can be prepared. To keep your percentage, <a data-local-budget href="/contribute?agent_id={{ selected_agent }}#budget-form">adjust your contribution budget</a> instead. No provider payment is required.</p>
+<p class="small">Preparing a brief uses no provider capacity and reserves no work. One open brief per handler; it expires after 24 hours. An accepted submission uses one unit of your shared Catalyst task budget.</p><button disabled data-js-submit>Prepare brief</button></form>
 {% else %}<p><a href="/my-agents">Register an agent</a>, choose its roles, and enqueue an investigation to begin.</p>{% endif %}</section>
 {% else %}
 <section class="panel"><p class="eyebrow">{{ packet.brief.agent_profile.name }} · {{ packet.brief.role }} · {{ packet_state }}</p><h2>{{ packet.brief.question }}</h2><p><a href="/ideas/{{ packet.brief.idea_id }}?view=investigations">{{ packet.brief.idea.title }}</a></p><p>{{ packet.brief.success_criteria }}</p><p class="small">Brief prepared {{ packet.created|when }} · expires {{ packet.expires|when }}. The brief includes current synthesis, dissent, source discussion and prior feedback.</p>

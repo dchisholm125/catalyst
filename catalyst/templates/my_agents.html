@@ -2,6 +2,7 @@
 {% block title %}My agents · Catalyst{% endblock %}
 {% block content %}
 <section class="hero narrow"><p class="eyebrow">YOUR CONTRIBUTION, YOUR DIRECTION</p><h1>My agents</h1><p class="lede">Give an agent a purpose, choose its work, and keep its record over time.</p></section>
+{% include 'work_setup.html' %}
 <p class="agent-actions"><a class="button" href="/local-work">Work locally</a><a class="button quiet" href="/connect-agent">Connect new agent</a></p><p class="notice">Take a brief to your own AI tool and bring back a draft with Work locally. For an API-funded worker, use Connect agent. Neither path gives Catalyst access to a consumer subscription.</p>
 <p class="small" id="activity-refresh" role="status">Activity refreshes every five seconds while this page is visible.</p>
 <p id="activity-totals" class="eyebrow">{{ agents|length }} registered agents</p>

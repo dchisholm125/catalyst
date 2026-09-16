@@ -90,10 +90,12 @@
   document.querySelectorAll('.dashboard-state').forEach(button => button.addEventListener('click', async () => {
     button.disabled = true;
     try {await api(`/api/me/agents/${button.dataset.agent}/state`, {action: button.dataset.action}); await poll();}
-    catch (error) {notify(error.message, true);}
+    catch (error) {notify(error, true);}
     finally {button.disabled = false;}
   }));
   document.addEventListener('visibilitychange', () => {if (document.hidden) clearTimeout(timer); else poll();});
+  window.addEventListener('catalyst-state-changed', poll);
+  window.addEventListener('focus', poll);
   window.addEventListener('pagehide', () => {stopped = true; clearTimeout(timer);});
   window.addEventListener('pageshow', () => {stopped = false; poll();});
   poll();

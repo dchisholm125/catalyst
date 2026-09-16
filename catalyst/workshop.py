@@ -126,15 +126,15 @@ def eligible_task(con, roles, task_id=None, idea_id=None, topic_id=None):
     # Iterate all bounded queues so a blocked first idea cannot starve other ideas.
     for row in con.execute("SELECT t.*,COALESCE(b.role,'researcher') AS role,COALESCE(b.tier,2) AS tier "
                            "FROM tasks t LEFT JOIN task_briefs b ON b.task_id=t.id "
-                           "WHERE t.status='queued' AND t.attempts<3 "
+                           "WHERE (t.status='queued' OR (t.status='leased' AND t.lease_until<=?)) AND t.attempts<3 "
                            "AND (? IS NULL OR t.id=?) AND (? IS NULL OR t.idea_id=?) "
                            "AND (? IS NULL OR EXISTS (SELECT 1 FROM signal_links l JOIN agenda_signals s ON s.id=l.signal_id "
                            "WHERE l.idea_id=t.idea_id AND s.topic_id=?)) ORDER BY tier,t.created,t.id",
-                           (task_id, task_id, idea_id, idea_id, topic_id, topic_id)):
+                           (time.time(), task_id, task_id, idea_id, idea_id, topic_id, topic_id)):
         if row["role"] not in roles:
             continue
         active_roles = [r[0] for r in con.execute("SELECT COALESCE(b.role,'researcher') FROM tasks t "
-            "LEFT JOIN task_briefs b ON b.task_id=t.id WHERE t.idea_id=? AND t.status='leased'", (row["idea_id"],))]
+            "LEFT JOIN task_briefs b ON b.task_id=t.id WHERE t.idea_id=? AND t.status='leased' AND t.lease_until>?", (row["idea_id"], time.time()))]
         pending = con.execute("SELECT count(*) FROM tasks t LEFT JOIN task_reviews r ON r.task_id=t.id "
             "WHERE t.idea_id=? AND t.status='completed' AND r.task_id IS NULL", (row["idea_id"],)).fetchone()[0]
         if len(active_roles) >= MAX_ACTIVE_PER_IDEA or row["role"] in active_roles:

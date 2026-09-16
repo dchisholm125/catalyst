@@ -16,7 +16,7 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.templating import Jinja2Templates
 from starlette.middleware.trustedhost import TrustedHostMiddleware
 
-from . import domain, workshop, governance
+from . import domain, workshop, governance, work_setup
 from .db import canonical, connect, digest, initialize, uid
 from .models import (BudgetInput, ContributionInput, DraftInput, FeedbackInput, IdeaInput,
                      ReactionInput, ReasonInput, ResultInput, ReviewInput, TaskInput, ClaimInput, OwnerIdeaInput)
@@ -48,9 +48,12 @@ def create_app(settings: Settings | None = None):
         initialize(settings.database)
         yield
 
-    app = FastAPI(title="Catalyst", version="0.7.0", lifespan=lifespan,
+    app = FastAPI(title="Catalyst", version="0.8.0", lifespan=lifespan,
                   description="Human-directed living ideas. Consumer subscription integrations are not connected.")
     app.state.settings = settings
+    @app.exception_handler(work_setup.RecoveryError)
+    async def recoverable_error(request, error):
+        return JSONResponse({'detail': error.detail, 'code': error.code, 'recovery': error.actions}, status_code=error.status_code)
     app.add_middleware(TrustedHostMiddleware, allowed_hosts=list(settings.allowed_hosts))
     app.mount("/static", StaticFiles(directory=ROOT / "static"), name="static")
     templates = Jinja2Templates(directory=ROOT / "templates")
@@ -213,13 +216,26 @@ def create_app(settings: Settings | None = None):
                         body=json.loads(rev["body"]), snapshot=json.loads(rev["context"]))
 
     @app.get("/contribute", response_class=HTMLResponse)
-    def contribute_page(request: Request):
+    def contribute_page(request: Request, agent_id: str = '', packet_id: str = '', workflow: str = 'local'):
         actor = maybe_actor(request)
-        budget = None
+        budget, setup, return_path = None, None, '/local-work'
         if actor and actor["kind"] == "human":
             with connect(settings.database) as con:
+                if packet_id:
+                    from .local_work import get
+                    row = get(con, packet_id, actor)
+                    agent_id = row['agent_id']
+                    return_path = '/local-work?packet_id='+row['id']
+                setup = work_setup.snapshot(con, actor, agent_id)
+                if not packet_id and setup['agent_id']:
+                    return_path = ('/connect-agent' if workflow == 'api' else '/local-work')+'?agent_id='+setup['agent_id']
                 budget = domain.budget_status(con, actor["id"])
-        return page(request, "contribute.html", budget=budget)
+        return page(request, "contribute.html", budget=budget, setup=setup, return_path=return_path, api_return=workflow=='api' and not packet_id)
+
+    @app.get('/api/me/work-setup')
+    def work_setup_data(agent_id: str = '', actor=Depends(human)):
+        with connect(settings.database) as con:
+            return work_setup.snapshot(con, actor, agent_id)
 
     @app.get("/about", response_class=HTMLResponse)
     def about(request: Request):

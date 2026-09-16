@@ -1,7 +1,7 @@
 """All management endpoints require a human session and ownership, including reads."""
 from fastapi import Depends, Request, Query
 from fastapi.responses import HTMLResponse, JSONResponse
-from . import agent_management as m, domain, workshop, activity
+from . import agent_management as m, domain, workshop, activity, work_setup
 from .db import connect
 from .models import AgentRegistration, AgentSettings, AgentAction, EnqueueWork, QueueAction, WorkerHeartbeat, TaskProgress
 
@@ -33,12 +33,13 @@ def install(app, settings, page, human, agent):
             agents = [dict(r) for r in con.execute('SELECT a.id,a.name,a.active,p.purpose,p.status,p.mode '
                 'FROM actors a JOIN agent_profiles p ON p.agent_id=a.id WHERE a.owner_id=? ORDER BY p.created,a.id', (actor['id'],))]
             snapshots = {a['id']: a for a in activity.dashboard(con, actor)['agents']}
-            return page(request, 'my_agents.html', agents=agents, activity=snapshots, budget=domain.budget_status(con, actor['id']))
+            return page(request, 'my_agents.html', agents=agents, activity=snapshots, budget=domain.budget_status(con, actor['id']), setup=work_setup.snapshot(con, actor))
 
     @app.get('/my-agents/{agent_id}', response_class=HTMLResponse)
     def agent_page(request: Request, agent_id: str, actor=Depends(human)):
         with connect(settings.database) as con:
             return page(request, 'my_agent.html', managed=m.detail(con, agent_id, actor),
+                        setup=work_setup.snapshot(con, actor, agent_id),
                         live=activity.snapshot(con, agent_id, actor),
                         topics=[dict(r) for r in con.execute('SELECT * FROM agenda_topics ORDER BY position')],
                         budget=domain.budget_status(con, actor['id']))

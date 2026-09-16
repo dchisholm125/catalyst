@@ -1,4 +1,20 @@
-# Architecture 0.7
+# Architecture 0.8
+
+Version 0.8 adds a read-only `/api/me/work-setup` view shared by contribution and
+agent pages. It uses persisted budget/profile/queue records and the same blocker
+checks as local preparation. Viewing readiness never resumes agents, claims work,
+changes a budget, or reserves a task. Expired leases are excluded from eligibility
+previews, matching claim-time expiry. All mutations still recheck under their
+existing write transaction.
+
+Recoverable work errors retain a plain `detail` for existing clients and add a
+stable `code` plus internal `recovery` links. Links preserve an owned agent or
+packet; no arbitrary return URL is accepted. Browser code renders messages as
+text and allows only same-origin links. BroadcastChannel carries only a change
+notification; each receiving tab fetches its own authenticated setup. Five-second
+polling and focus refresh cover CLI changes, time expiry and browser fallback.
+Unsaved budget edits are preserved and identified separately from server state.
+There is no schema change. See [iteration 0.8](ITERATION_08.md).
 
 Version 0.7 adds a human-directed JSON file workflow. `local_work_packets` stores
 one non-reserving source snapshot per open handler packet, expiring after 24 hours.

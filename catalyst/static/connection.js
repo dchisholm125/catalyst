@@ -6,7 +6,14 @@
   let aid = wizard.dataset.agent, selectedRoles = [], generation = 0, step = 1, lastStatus = null, runningPoll = false, lastError = '';
   const agentForm = $('#connection-agent'), providerForm = $('#connection-provider');
   if (!aid) agentForm.agent_id.value = 'new';
-  const status = (message, error=false) => { if(error) lastError=message; $('#connection-status').textContent = message; };
+  const status = (message, error=false) => {
+    if(error) lastError=message;
+    const box = $('#connection-status');
+    box.textContent = typeof message === 'object' ? message.message : message;
+    for (const item of message?.recovery || []) {
+      const link = recoveryLink(item); if (link) box.append(' ', link);
+    }
+  };
   wizard.addEventListener('input',()=>{lastError='';});
   function show(number) {
     step = number;
@@ -27,7 +34,7 @@
     }
     agentForm.querySelectorAll('[name="roles"]').forEach(input => { input.checked=roles.includes(input.value); });
   }
-  agentForm.agent_id.addEventListener('change', () => chooseAgent().catch(error=>status(error.message)));
+  agentForm.agent_id.addEventListener('change', () => chooseAgent().catch(error=>status(error)));
   agentForm.addEventListener('submit', event => {
     event.preventDefault(); selectedRoles = [...agentForm.querySelectorAll('[name="roles"]:checked')].map(input=>input.value);
     if (!selectedRoles.length) return status('Choose at least one role.');
@@ -60,9 +67,9 @@
   }
   providerForm.addEventListener('submit', async event => {
     event.preventDefault(); $('#prepare-connection').disabled=true;
-    try { await prepare(); } catch(error) { status(error.message); } finally { accessChanged(); }
+    try { await prepare(); } catch(error) { status(error); } finally { accessChanged(); }
   });
-  $('#restart-pairing').addEventListener('click', async () => { try { await prepare(); } catch(error) { status(error.message); } });
+  $('#restart-pairing').addEventListener('click', async () => { try { await prepare(); } catch(error) { status(error); } });
   wizard.querySelectorAll('[data-back-step]').forEach(button => button.addEventListener('click', () => { show(Number(button.dataset.backStep)); status('Review your choices before preparing a new connection.'); }));
   wizard.querySelectorAll('[data-copy]').forEach(button => button.addEventListener('click', async () => {
     const source = $('#'+button.dataset.copy), text = source.value || source.textContent;
@@ -73,11 +80,11 @@
     try {
       await api(`/api/me/agents/${aid}/connection/run`, {request_key:crypto.randomUUID(), resume:form.resume.checked, enable_one_job_budget:form.enable_one_job_budget.checked, api_billing_accepted:form.api_billing_accepted.checked});
       status('One assignment requested. Your local connector will pick it up.'); await poll();
-    } catch(error) { status(error.message,true); }
+    } catch(error) { status(error,true); }
     finally { button.disabled = !lastStatus?.fresh || lastStatus.state!=='verified' || ['requested','running'].includes(lastStatus.command_state); }
   });
   for (const [selector, action] of [['#stop-connected-agent','stop'],['#disconnect-agent','disconnect']]) {
-    $(selector).addEventListener('click', async () => { lastError=''; try { await api(`/api/me/agents/${aid}/connection/${action}`, {}); await poll(); } catch(error) { status(error.message,true); } });
+    $(selector).addEventListener('click', async () => { lastError=''; try { await api(`/api/me/agents/${aid}/connection/${action}`, {}); await poll(); } catch(error) { status(error,true); } });
   }
   async function poll() {
     if (!aid || runningPoll || ![3,4].includes(step)) return;
@@ -108,6 +115,6 @@
       const info=await api(`/api/me/agents/${aid}/connection`,undefined,'GET');
       if(info.verified){show(4);await poll();}
     }
-  }).catch(error=>status(error.message));
+  }).catch(error=>status(error));
   setInterval(()=>{if(!document.hidden) poll().catch(()=>status('Connection status could not be refreshed.'));},3000);
 })();

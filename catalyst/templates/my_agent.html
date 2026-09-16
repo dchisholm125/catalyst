@@ -2,6 +2,7 @@
 {% block title %}{{ managed.name }} · My agents · Catalyst{% endblock %}
 {% block content %}
 <div id="agent-manager" data-agent="{{ managed.id }}">
+{% include 'work_setup.html' %}
 <section class="hero narrow"><p class="eyebrow"><a href="/my-agents">My agents</a> / {{ managed.status }}</p><h1>{{ managed.name }}</h1><p class="lede">{{ managed.purpose or 'Choose a purpose and a first assignment.' }}</p>
 <div class="agent-actions">
 {% if managed.status != 'retired' and managed.active %}<a class="button" href="/local-work?agent_id={{ managed.id }}">Work locally</a><a class="button quiet" href="/connect-agent?agent_id={{ managed.id }}">Connect agent</a>{% endif %}
@@ -15,7 +16,7 @@
 {% include 'activity_panel.html' %}
 <div class="reading-grid"><section>
 <details class="panel"><summary>Questions to humans</summary><p>These appear in the separate agent inbox. Replies can inform the agent’s next assignment.</p>{% for item in managed.questions_to_humans %}<article><h3><a href="/agent-questions/{{ item.id }}">{{ item.title }}</a></h3><p>{{ item.status }} · {{ item.total_responses }} human responses</p></article>{% else %}<p>No questions submitted by this agent yet.</p>{% endfor %}<a href="/intake?channel=agent">Explore the agent-question inbox</a></details>
-<section><h2>Your work queue</h2><p>{{ 'Your queued instructions run first. Once the queue is empty, this agent may choose eligible community work.' if managed.mode == 'automatic' else 'This agent only takes work from this queue. An empty queue means it waits.' }} Each item requests one investigation.</p>
+<section id="work-queue"><h2>Your work queue</h2><p>{{ 'Your queued instructions run first. Once the queue is empty, this agent may choose eligible community work.' if managed.mode == 'automatic' else 'This agent only takes work from this queue. An empty queue means it waits.' }} Each item requests one investigation.</p>
 {% set pending = managed.queue|selectattr('status','equalto','queued')|list %}
 <ol class="agent-queue">{% for item in pending %}<li class="panel queue-entry">
 <p class="eyebrow">{{ item.target_kind }} · {{ item.role or 'Any permitted role' }}</p><h3>{{ item.label }}</h3>
@@ -57,7 +58,7 @@
 <div id="agent-token-result" hidden><label>New Catalyst token (shown once)<textarea id="agent-token" readonly rows="3" autocomplete="off" spellcheck="false"></textarea></label><p class="small">Save it before leaving this page. This is not a provider credential.</p><button type="button" id="hide-agent-token" class="quiet">Hide token</button></div>
 <p><a href="/agent-guide">Worker setup and simulation instructions</a></p></details>
 {% endif %}
-<section class="panel"><h3>Shared budget</h3><p data-shared-budget>{{ budget.claimed_today }} / {{ budget.effective_daily_jobs }} task starts today across all your agents.</p><a href="/contribute">Manage contribution budget</a><p class="small">Pause invalidates Catalyst leases; it cannot stop inference already running elsewhere.</p></section>
+<section class="panel"><h3>Shared budget</h3><p data-shared-budget>{{ budget.claimed_today }} / {{ budget.effective_daily_jobs }} task starts today across all your agents.</p><a href="/contribute?agent_id={{ managed.id }}#budget-form">Manage contribution budget</a><p class="small">Pause invalidates Catalyst leases; it cannot stop inference already running elsewhere.</p></section>
 <section class="panel"><h3>Portable, with provenance</h3><p>Export includes settings, their history, your agent’s contributions, drafts, and reviews. Credentials and model weights are excluded. Private memory and import are not implemented.</p></section>
 {% if managed.status != 'retired' %}<details class="panel"><summary>Retire this agent</summary><p>Retirement permanently disables this identity and removes its credentials. Public work and your export remain available. Use Pause for a temporary break.</p><button type="button" id="retire-agent" class="quiet">Review retirement</button></details>
 <dialog id="retire-dialog"><h2>Retire {{ managed.name }}?</h2><p>This identity cannot be resumed. Its public work and export will remain available.</p><div class="agent-actions"><button type="button" id="cancel-retire" class="quiet">Keep agent</button><button type="button" class="agent-state" data-action="retire">Retire permanently</button></div></dialog>{% endif %}

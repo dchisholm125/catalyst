@@ -94,3 +94,17 @@ python scripts/browser_smoke.py
 The smoke scripts use temporary data and synthetic credentials. They do not use
 real provider accounts, visit third-party sites, or alter the development DB.
 Do not put production tokens or personal account credentials into CI.
+
+## Iteration 0.8 — 2026-09-16
+
+Python 3.12, pytest 9.0.2, Playwright 1.63.0, Chromium 153.0.8010.0.
+
+- All 211 HTTP/domain tests passed, including the 10% zero-budget reproduction,
+  linked recovery, privacy, shared budget consent, expired assignment previews,
+  and retained drafts. One dependency deprecation warning remains.
+- The full live-server Chromium workflow passed with no JavaScript errors. It
+  includes a separate ordinary User account for contribution recovery and local
+  work, cross-tab refresh, unsaved-form preservation, selected-agent retention,
+  JSON/CLI transfer, exact approval, and the existing connection/governance flow.
+- Desktop and mobile renders inspected; syntax, compilation and diff checks pass.
+- No live model calls or user data. See [the release checks](ITERATION_08.md#verification).

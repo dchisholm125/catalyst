@@ -25,7 +25,7 @@
   function click(id, action) {
     document.querySelector(id)?.addEventListener('click', async event => {
       const button = event.currentTarget; button.disabled = true;
-      try { await action(); } catch(error) { notify(error.message, true); }
+      try { await action(); } catch(error) { notify(error, true); }
       finally { button.disabled = false; }
     });
   }

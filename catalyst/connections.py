@@ -100,6 +100,7 @@ def snapshot(con, aid, owner):
 
 
 def request_run(con, aid, owner, data):
+    from .work_setup import budget_problem
     profile = m.owned(con, aid, owner)
     if con.execute('SELECT 1 FROM connection_pairings WHERE agent_id=? AND expires>?', (aid, time.time())).fetchone():
         raise HTTPException(409, 'Finish the new connection setup before requesting work')
@@ -117,8 +118,11 @@ def request_run(con, aid, owner, data):
     budget = domain.budget_status(con, owner['id'])
     if not budget['enabled'] or budget['effective_daily_jobs'] == 0:
         if not data.enable_one_job_budget:
-            raise HTTPException(409, 'Enable a contribution budget before requesting a run')
+            raise budget_problem(budget, aid, flow='api')
         domain.set_budget(con, owner['id'], BudgetInput(share=100, daily_jobs=1, enabled=True))
+    problem = budget_problem(domain.budget_status(con, owner['id']), aid, flow='api')
+    if problem:
+        raise problem
     con.execute("UPDATE model_connections SET command_id=?,command_state='requested',command_created=?,task_id=NULL,task_attempt=NULL,result_id=NULL,message='One assignment requested.' WHERE agent_id=?",
         (data.request_key, time.time(), aid))
     con.execute('INSERT INTO connection_run_receipts VALUES (?,?,?)', (aid, data.request_key, time.time()))

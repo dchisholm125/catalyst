@@ -9,7 +9,7 @@ bind("#register-agent", async (form, data) => {
   const base = `/api/me/agents/${manager.dataset.agent}`;
   const action = (selector, handler) => document.querySelectorAll(selector).forEach(button => button.addEventListener("click", async () => {
     button.disabled = true;
-    try { await handler(button); } catch (error) { notify(error.message, true); }
+    try { await handler(button); } catch (error) { notify(error, true); }
     finally { button.disabled = false; }
   }));
   action(".agent-state", async button => { await api(`${base}/state`, {action: button.dataset.action}); refresh(); });
@@ -78,7 +78,7 @@ bind("#register-agent", async (form, data) => {
       data.tasks.forEach(task => { const option = new Option(`${task.role}: ${task.question} (${task.status})`, task.id); option.dataset.role = task.role; tasks.add(option); });
       document.querySelector("#idea-investigations").href = `/ideas/${idea}?view=investigations`;
       document.querySelector("#investigation-choices").hidden = false;
-    } catch (error) { notify(error.message, true); }
+    } catch (error) { notify(error, true); }
   });
   target.addEventListener("change", () => {
     const isIdea = target.value === "idea";

@@ -16,6 +16,10 @@ styling, editorial typography, combined filters, and accessible idea panels.
 
 ## Next: a genuinely usable small workshop
 
+Shipped in 0.8: shared saved setup, live effective-budget explanation, explicit
+unsaved edits, cross-tab refresh, and recoverable links back to the selected agent
+or retained draft. See [setup and recovery](ITERATION_08.md).
+
 Shipped in 0.7: human-directed brief/answer exchange, optional pull/push commands,
 exact handler approval, stale-input rejection, and honest local-work dashboard
 states. The next trial can use a person's own authorized tool and included

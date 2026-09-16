@@ -128,6 +128,12 @@ def test_one_shot_run_receipts_and_claims_are_concurrent_and_durable(site,idea):
     assert sorted(r.status_code for r in results)==[200,409]
     owner.post(f'/api/me/agents/{aid}/connection/stop')
     initialize(path)
+    exhausted=run(owner,aid)
+    assert exhausted.status_code==409 and exhausted.json()['code']=='budget_exhausted'
+    recovery=exhausted.json()['recovery'][0]['href']
+    assert 'workflow=api' in recovery
+    assert f'/connect-agent?agent_id={aid}' in owner.get(recovery).text
+    owner.put('/api/me/budget',json={'daily_jobs':2,'share':100,'enabled':True})
     second=run(owner,aid); assert second.status_code==200
     second_command=status(owner,aid)['command_id']
     assert run(owner,aid,request_key=command).json()['duplicate']

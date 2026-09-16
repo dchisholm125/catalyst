@@ -2,10 +2,24 @@
 const csrf = document.querySelector('meta[name="csrf-token"]').content;
 const statusBox = document.querySelector("#status");
 function notify(message, error = false) {
-  statusBox.textContent = message;
+  const recovery = typeof message === 'object' ? message.recovery : [];
+  statusBox.textContent = typeof message === 'object' ? message.message : message;
+  for (const item of recovery || []) {
+    const link = recoveryLink(item);
+    if (link) statusBox.append(document.createTextNode(' '), link);
+  }
   statusBox.className = error ? "visible error" : "visible";
   statusBox.focus();
 }
+function recoveryLink(item) {
+  if (typeof item.href !== 'string' || !item.href.startsWith('/') || item.href.startsWith('//')) return null;
+  const url = new URL(item.href, window.location.origin);
+  if (url.origin !== window.location.origin) return null;
+  const link = document.createElement('a'); link.href = url.href; link.textContent = item.label;
+  return link;
+}
+const setupChannel = typeof BroadcastChannel === 'function' ? new BroadcastChannel('catalyst-setup') : null;
+setupChannel?.addEventListener('message', () => window.dispatchEvent(new Event('catalyst-state-changed')));
 async function api(path, data, method = "POST") {
   const response = await fetch(path, {method, credentials: "same-origin", headers: {
     "Content-Type": "application/json", "X-CSRF-Token": csrf
@@ -13,19 +27,29 @@ async function api(path, data, method = "POST") {
   const value = await response.json();
   if (!response.ok) {
     const detail = typeof value.detail === "string" ? value.detail : JSON.stringify(value.detail);
-    throw new Error(detail || `Request failed (${response.status})`);
+    const error = new Error(detail || `Request failed (${response.status})`);
+    error.recovery = value.recovery || (response.status === 401 ? [{label:'Sign in again',href:'/login'}] : []);
+    throw error;
+  }
+  if (method !== 'GET') {
+    window.dispatchEvent(new Event('catalyst-state-changed'));
+    setupChannel?.postMessage('changed');
   }
   return value;
 }
 function bind(selector, handler) {
-  document.querySelectorAll(selector).forEach(form => form.addEventListener("submit", async event => {
+  document.querySelectorAll(selector).forEach(form => {
+    form.addEventListener("submit", async event => {
     event.preventDefault();
     const button = form.querySelector('button');
     if (button) button.disabled = true;
     try { await handler(form, new FormData(form)); }
-    catch (error) { notify(error.message, true); }
+    catch (error) { notify(error, true); }
     finally { if (button) button.disabled = false; }
-  }));
+    });
+    const readyButton = form.querySelector('[data-js-submit]');
+    if (readyButton) readyButton.disabled = false;
+  });
 }
 const refresh = () => window.location.reload();
 bind("#new-idea", async (form, data) => {
@@ -58,20 +82,17 @@ bind(".recognize-form", async (form, data) => {
 bind("#task-form", async (form, data) => {
   await api(`/api/ideas/${form.dataset.idea}/tasks`, {question: data.get("question"), role: data.get("role"), tier: Number(data.get("tier")), success_criteria: data.get("success_criteria") || ""}); refresh();
 });
-bind("#budget-form", async (form, data) => {
-  await api("/api/me/budget", {share: Number(data.get("share")), daily_jobs: Number(data.get("daily_jobs")), enabled: data.has("enabled")}, "PUT"); refresh();
-});
 bind("#feedback-form", async (form, data) => {
   await api("/api/feedback", {category: data.get("category"), body: data.get("body")});
   form.reset(); notify("Feedback saved for the human reviewers.");
 });
 document.querySelectorAll(".cancel-task").forEach(button => button.addEventListener("click", async () => {
   try { await api(`/api/tasks/${button.dataset.task}/cancel`, {}); refresh(); }
-  catch (error) { notify(error.message, true); }
+  catch (error) { notify(error, true); }
 }));
 document.querySelector("#logout")?.addEventListener("click", async () => {
   try { await api("/api/logout", {}); window.location.assign("/"); }
-  catch (error) { notify(error.message, true); }
+  catch (error) { notify(error, true); }
 });
 document.querySelector("#share")?.addEventListener("input", event => {
   document.querySelector("#share-output").textContent = `${event.target.value}%`;

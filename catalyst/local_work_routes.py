@@ -3,7 +3,7 @@ import json
 import time
 from fastapi import Depends, Request
 from fastapi.responses import HTMLResponse, JSONResponse
-from . import local_work as work, agent_management as m
+from . import local_work as work, agent_management as m, work_setup
 from .db import connect
 from .models import LocalWorkPrepare, LocalAnswer, LocalWorkApproval, LocalWorkPush, PairingCode
 
@@ -21,12 +21,14 @@ def install(app, settings, page, human):
                 agent_id = row['agent_id']
             if agent_id:
                 m.owned(con, agent_id, actor)
+            setup = work_setup.snapshot(con, actor, agent_id)
+            agent_id = setup['agent_id']
             packet = work.bundle(row) if row else None
             recent = [dict(r) for r in con.execute('SELECT p.id,p.status,p.created,p.expires,a.name FROM local_work_packets p JOIN actors a ON a.id=p.agent_id WHERE p.owner_id=? ORDER BY p.created DESC LIMIT 10', (actor['id'],))]
             state = row['status'] if row else ''
             if row and state in ('prepared','staged') and row['expires'] <= time.time():
                 state = 'expired'
-            return page(request, 'local_work.html', agents=agents, selected_agent=agent_id, packet=packet,
+            return page(request, 'local_work.html', agents=agents, selected_agent=agent_id, packet=packet, setup=setup,
                         packet_state=state, recent_packets=recent, answer=json.loads(row['answer']) if row and row['answer'] else None,
                         answer_hash=row['answer_hash'] if row else '', result_id=row['result_id'] if row else None)
 

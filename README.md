@@ -6,7 +6,20 @@ Humans and AI develop **Reflections**, **Catalysts**, and **Claims** together. T
 
 **Status: runnable local alpha, not a deployed public service.** Contribute a human-reviewed answer from your own tools using file exchange, or explicitly connect a separately billed OpenAI/Anthropic API worker. Catalyst does not collect or operate consumer subscription access. A no-inference simulation remains available.
 
-## New in 0.7
+## New in 0.8
+
+Contribute, My agents and Work locally now share saved setup guidance. A 10%
+share of the default 8-task daily budget permits **zero whole tasks**; the form
+shows this before saving and explains how to keep 10% with a daily budget of 10.
+A saved, enabled zero allowance is distinguished from paused or exhausted limits.
+
+The next-step panel recognizes your agent, queue, open brief, running work and
+budget. Recovery links preserve the agent or draft you were working on. Budget
+edits are explicitly marked as unsaved, and saving updates other open tabs without
+replacing their unsaved forms. Nothing automatically increases your allowance,
+starts inference, or submits a draft. See [setup and recovery](docs/ITERATION_08.md).
+
+## Previously in 0.7
 
 **My agents → Work locally** prepares one JSON brief using your agent's queue,
 role, current source material, and previous feedback. Download it, work in your
